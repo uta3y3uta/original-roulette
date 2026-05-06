@@ -572,7 +572,7 @@
         <div class="winner-count-row">
           🎯 当選数 <input type="number" id="ctl-K2" min="1" max="50" value="1"> 個
           <label style="margin-left:10px;font-size:13px;font-weight:600;cursor:pointer">
-            <input type="checkbox" id="ctl-complete"> 重複なし
+            <input type="checkbox" id="ctl-complete"> 重複あり
           </label>
         </div>
         <button class="btn-spin" id="btn-spin">🎡 回転</button>
@@ -726,7 +726,7 @@ const state = loadState() || {
   uiTheme: 'pastel',
   N: 8,
   K: 1,
-  complete: false,
+  complete: true,
   completedSet: [],
   themeColor: DEFAULT_THEME,
   autoGradient: false,
@@ -742,7 +742,7 @@ function ensureStateIntegrity(s){
   if(typeof s.uiTheme !== 'string') s.uiTheme = 'pastel';
   if(typeof s.N !== 'number') s.N = 8;
   if(typeof s.K !== 'number') s.K = 1;
-  if(typeof s.complete !== 'boolean') s.complete = false;
+  if(typeof s.complete !== 'boolean') s.complete = true;
   if(!Array.isArray(s.completedSet)) s.completedSet = [];
   if(typeof s.fontSizeScale !== 'number') s.fontSizeScale = 1.0;
   if(typeof s.rotation !== 'number') s.rotation = 0;
@@ -1096,7 +1096,8 @@ function renderAll(){
   document.getElementById('ctl-N').value = state.N;
   document.getElementById('ctl-K2').value = state.K;
   document.getElementById('ctl-K2').max = state.N;
-  document.getElementById('ctl-complete').checked = !!state.complete;
+  // チェック＝「重複あり」（=state.completeがfalse）
+  document.getElementById('ctl-complete').checked = !state.complete;
   document.getElementById('ctl-fontscale').value = state.fontSizeScale;
   document.getElementById('ctl-fontscale-val').textContent = Number(state.fontSizeScale).toFixed(2)+'x';
   themePicker.setValue(state.themeColor);
@@ -1260,7 +1261,8 @@ document.getElementById('ctl-K2').addEventListener('change', e=> syncK(e.target.
 document.getElementById('ctl-K2').addEventListener('input', e=> syncK(e.target.value));
 
 document.getElementById('ctl-complete').addEventListener('change', e=>{
-  state.complete = e.target.checked;
+  // チェック＝「重複あり」モード → state.complete は false（=重複なしモードを解除）
+  state.complete = !e.target.checked;
   state.completedSet = [];
   winnerHighlights.clear();
   renderAll();
