@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-k">
+<meta name="build-rev" content="2026-05-06-l">
 <title>オリジナルルーレット</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -555,13 +555,13 @@
   }
   @keyframes fb-rise{
     0%   {transform:translate(0,0) scale(0.55) rotate(0deg);opacity:0}
-    25%  {transform:translate(0,-32px) scale(1.0) rotate(50deg);opacity:1}
-    100% {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.2) rotate(180deg);opacity:1}
+    25%  {transform:translate(0,-32px) scale(1.0) rotate(120deg);opacity:1}
+    100% {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.2) rotate(360deg);opacity:1}
   }
   @keyframes fb-drop{
-    0%   {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.2) rotate(180deg);opacity:1}
-    70%  {transform:translate(var(--fb-tx),var(--fb-ty)) scale(1.0) rotate(380deg);opacity:1}
-    100% {transform:translate(var(--fb-tx),var(--fb-ty)) scale(0.45) rotate(540deg);opacity:0}
+    0%   {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.2) rotate(360deg);opacity:1}
+    70%  {transform:translate(var(--fb-tx),var(--fb-ty)) scale(1.0) rotate(560deg);opacity:1}
+    100% {transform:translate(var(--fb-tx),var(--fb-ty)) scale(0.45) rotate(720deg);opacity:0}
   }
 
   /* ===== カードめくり ===== */
@@ -936,6 +936,14 @@ function makeBlankSections(n){
   for(let i=0;i<n;i++) arr.push({label:'', fillColor:null, textColor:null, blank:false});
   return arr;
 }
+function makeShuffledOrder(n){
+  const arr = Array.from({length:n}, (_,i)=>i);
+  for(let i=arr.length-1; i>0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 function defaultLabels(n){
   const labels = ['りんご','みかん','バナナ','ぶどう','メロン','いちご','もも','すいか','キウイ','パイン','レモン','マンゴー'];
   const arr = [];
@@ -959,7 +967,7 @@ const state = loadState() || {
   strokeColor: DEFAULT_STROKE,
   rotation: 0,
   fukubikiPhase: 0,
-  cardOrder: [],
+  cardOrder: makeShuffledOrder(8),
   cardFlipped: [],
   sections: defaultLabels(8)
 };
@@ -998,7 +1006,7 @@ function ensureStateIntegrity(s){
   if(!Array.isArray(s.cardOrder) || s.cardOrder.length !== s.N
      || !s.cardOrder.every(i => Number.isInteger(i) && i >= 0 && i < s.N)
      || (new Set(s.cardOrder)).size !== s.N){
-    s.cardOrder = Array.from({length:s.N}, (_,i)=>i);
+    s.cardOrder = makeShuffledOrder(s.N);
   }
   if(!Array.isArray(s.cardFlipped)) s.cardFlipped = [];
   s.cardFlipped = s.cardFlipped.filter(i => Number.isInteger(i) && i >= 0 && i < s.N);
@@ -1031,8 +1039,8 @@ function setN(n){
   // 分割数が変わったら☆もリセット
   state.completedSet = [];
   state.fukubikiPhase = 0;
-  // カードめくりも初期化
-  state.cardOrder = Array.from({length:n}, (_,i)=>i);
+  // カードめくりも初期化（デフォルトでシャッフル）
+  state.cardOrder = makeShuffledOrder(n);
   state.cardFlipped = [];
 }
 
@@ -1609,10 +1617,12 @@ function buildFukubikiSVG(){
       parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="${ballC}" stroke="rgba(60,20,0,0.45)" stroke-width="0.7" opacity="0.94" />`);
       // ハイライト（つや）
       parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="url(#fb-ball-grad)" pointer-events="none" />`);
-      // 文字
+      // 文字（ボールサイズは固定，文字サイズ倍率のみ反映）
       const display = ballDisplayLabel(item.label, ballR);
       const charCount = Array.from(display).length;
-      const fs = Math.max(6, Math.min(ballR * 0.95, ballR * 1.6 / Math.max(1, charCount)));
+      const fontScale = state.fontSizeScale || 1.0;
+      const fsBase = Math.max(6, Math.min(ballR * 0.95, ballR * 1.6 / Math.max(1, charCount)));
+      const fs = Math.max(4, Math.min(ballR * 1.4, fsBase * fontScale));
       parts.push(`<text x="${pos.x.toFixed(2)}" y="${(pos.y+0.5).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${fs.toFixed(2)}" font-weight="800" fill="${textC}" font-family='${fontFam}' paint-order="stroke" stroke="rgba(255,255,255,0.55)" stroke-width="${(fs*0.06).toFixed(2)}">${escapeXml(display)}</text>`);
     }
   };
@@ -1711,13 +1721,15 @@ function renderCards(){
   const cols = calcCardCols(N);
   grid.style.setProperty('--card-cols', cols);
 
-  // フォントサイズはセル数で大体合わせる
-  let fontPx;
-  if(cols <= 3) fontPx = 22;
-  else if(cols === 4) fontPx = 18;
-  else if(cols === 5) fontPx = 16;
-  else if(cols === 6) fontPx = 14;
-  else fontPx = 12;
+  // フォントサイズはセル数で大体合わせる（文字サイズ倍率も反映）
+  let fontBase;
+  if(cols <= 3) fontBase = 22;
+  else if(cols === 4) fontBase = 18;
+  else if(cols === 5) fontBase = 16;
+  else if(cols === 6) fontBase = 14;
+  else fontBase = 12;
+  const fontScale = state.fontSizeScale || 1.0;
+  const fontPx = Math.max(8, Math.min(48, fontBase * fontScale));
 
   const flipped = new Set(state.cardFlipped);
 
@@ -1989,6 +2001,8 @@ function schedulePreview(){
     document.getElementById('preview-info').textContent = `${state.N}分割 / 入力済${filledCount}件 / 当選${state.K}個`;
     updateBulkBlankCheckbox();
     renderRoulette();
+    renderFukubiki();
+    renderCards();
     saveState();
   });
 }
@@ -2090,7 +2104,7 @@ document.getElementById('btn-clear').addEventListener('click', ()=>{
   }
   state.completedSet = [];
   state.fukubikiPhase = 0;
-  state.cardOrder = Array.from({length:state.N}, (_,i)=>i);
+  state.cardOrder = makeShuffledOrder(state.N);
   state.cardFlipped = [];
   winnerHighlights.clear();
   renderAll();
@@ -2115,7 +2129,7 @@ function applyLabels(labels){
   }
   state.completedSet = [];
   state.fukubikiPhase = 0;
-  state.cardOrder = Array.from({length:state.N}, (_,i)=>i);
+  state.cardOrder = makeShuffledOrder(state.N);
   state.cardFlipped = [];
   winnerHighlights.clear();
   renderAll();
@@ -2815,11 +2829,13 @@ function flyOutBalls(winners){
       const targetY = sourceY - 220 - Math.random()*40;
       const el = document.createElement('div');
       el.className = 'fb-fly fb-out-only';
+      const fontScale = state.fontSizeScale || 1.0;
+      const flyFs = Math.max(8, Math.min(ballPx * 0.62, ballPx * 0.32 * fontScale));
       el.style.cssText = `
         left:${(sourceX - ballPx/2).toFixed(1)}px;
         top:${(sourceY - ballPx/2).toFixed(1)}px;
         width:${ballPx}px;height:${ballPx}px;
-        font-size:${(ballPx*0.32).toFixed(1)}px;
+        font-size:${flyFs.toFixed(1)}px;
         background:radial-gradient(circle at 32% 30%, #fff8 0%, transparent 50%), ${ballC};
         color:${textC};
         --fb-mx:${(midX-sourceX).toFixed(1)}px;
@@ -2865,11 +2881,13 @@ function flyOutAndHover(winners){
       const targetY = sourceY;
       const el = document.createElement('div');
       el.className = 'fb-fly fb-rise';
+      const fontScale = state.fontSizeScale || 1.0;
+      const flyFs = Math.max(8, Math.min(ballPx * 0.62, ballPx * 0.32 * fontScale));
       el.style.cssText = `
         left:${(sourceX - ballPx/2).toFixed(1)}px;
         top:${(sourceY - ballPx/2).toFixed(1)}px;
         width:${ballPx}px;height:${ballPx}px;
-        font-size:${(ballPx*0.32).toFixed(1)}px;
+        font-size:${flyFs.toFixed(1)}px;
         background:radial-gradient(circle at 32% 30%, #fff8 0%, transparent 50%), ${ballC};
         color:${textC};
         --fb-mx:${(midX-sourceX).toFixed(1)}px;
@@ -2994,9 +3012,11 @@ function showReveal(winnerIndexes){
       const textC = sec.textColor || fukubikiTextColor();
       ball.style.setProperty('--ball-bg', ballC);
       ball.style.setProperty('--ball-fg', textC);
-      // 文字数で大きさ調整（長文は小さめ）
+      // 文字数で大きさ調整（長文は小さめ）。文字サイズ倍率も反映。
       const len = Array.from(label).length;
-      const fs = len <= 4 ? 32 : len <= 8 ? 26 : len <= 14 ? 20 : 16;
+      const fsBase = len <= 4 ? 32 : len <= 8 ? 26 : len <= 14 ? 20 : 16;
+      const fontScale = state.fontSizeScale || 1.0;
+      const fs = Math.max(10, Math.min(64, fsBase * fontScale));
       ball.style.fontSize = fs + 'px';
       ball.textContent = label;
       revealList.appendChild(ball);
