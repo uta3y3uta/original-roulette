@@ -789,7 +789,24 @@
    共有URLビューの早期検出
    ============================================================ */
 const isShareView = /^#share=/.test(location.hash || '');
-if(isShareView) document.body.classList.add('share-view');
+if(isShareView){
+  document.body.classList.add('share-view');
+  // 共有ビューでは「🎊 完成 → 共有URL発行」ボタンを
+  // DOMごと取り除く（CSSだけでなく確実に消す）
+  const removeForShareView = ()=>{
+    const fin = document.getElementById('btn-finish');
+    if(fin){
+      // 親（.editor-panel ラッパ）も含めて消す
+      const wrap = fin.closest('.editor-panel') || fin;
+      wrap.remove();
+    }
+  };
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', removeForShareView, {once:true});
+  }else{
+    removeForShareView();
+  }
+}
 
 /* ============================================================
    定数
@@ -2475,7 +2492,9 @@ const finishDialog = document.getElementById('finish-dialog');
 const shareDialog = document.getElementById('share-url-dialog');
 const shareUrlText = document.getElementById('share-url-text');
 
-document.getElementById('btn-finish').addEventListener('click', ()=>{
+// 共有ビューでは btn-finish を DOM から削除しているため null チェック
+const _btnFinish = document.getElementById('btn-finish');
+if(_btnFinish) _btnFinish.addEventListener('click', ()=>{
   // 既定タイトル：先頭3項目から
   const sample = state.sections.filter(s=>!s.blank && (s.label||'').trim())
                                 .slice(0,3).map(s=>s.label.trim()).join('・');
