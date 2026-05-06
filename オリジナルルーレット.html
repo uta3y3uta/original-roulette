@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-h">
+<meta name="build-rev" content="2026-05-06-i">
 <title>オリジナルルーレット</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -532,11 +532,22 @@
     box-shadow:0 6px 14px rgba(0,0,0,0.35), inset -4px -5px 8px rgba(0,0,0,0.18), inset 3px 3px 6px rgba(255,255,255,0.55);
     animation:fb-fly-out 1.0s cubic-bezier(0.22, 1.1, 0.36, 1) forwards
   }
+  /* もう一方の箱に「落下」する飛び方（重複なしモード時） */
+  .fb-fly.fb-fly-cross{
+    animation:fb-fly-cross 1.4s cubic-bezier(0.4, 0.0, 0.6, 1) forwards
+  }
   @keyframes fb-fly-out{
     0%  {transform:translate(0,0) scale(0.55) rotate(0deg);opacity:0}
     15% {transform:translate(0,-30px) scale(0.9) rotate(40deg);opacity:1}
     55% {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.15) rotate(220deg);opacity:1}
     100%{transform:translate(var(--fb-tx),var(--fb-ty)) scale(1.4) rotate(540deg);opacity:0}
+  }
+  @keyframes fb-fly-cross{
+    0%  {transform:translate(0,0) scale(0.55) rotate(0deg);opacity:0}
+    10% {transform:translate(0,-26px) scale(1.0) rotate(50deg);opacity:1}
+    48% {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.2) rotate(240deg);opacity:1}
+    82% {transform:translate(var(--fb-tx),var(--fb-ty)) scale(1.0) rotate(440deg);opacity:1}
+    100%{transform:translate(var(--fb-tx),var(--fb-ty)) scale(0.45) rotate(540deg);opacity:0}
   }
 
   /* 共有ビュー：編集UIを隠して大きく */
@@ -861,6 +872,8 @@ function ensureStateIntegrity(s){
   if(typeof s.K !== 'number') s.K = 1;
   if(typeof s.complete !== 'boolean') s.complete = true;
   if(!Array.isArray(s.completedSet)) s.completedSet = [];
+  // 紅白福引きBOXのボール位置フェーズ：0=未抽選が赤・抽選済が白／1=逆
+  if(s.fukubikiPhase !== 0 && s.fukubikiPhase !== 1) s.fukubikiPhase = 0;
   if(typeof s.fontSizeScale !== 'number') s.fontSizeScale = 1.0;
   if(typeof s.rotation !== 'number') s.rotation = 0;
   if(!s.themeColor) s.themeColor = DEFAULT_THEME;
@@ -909,6 +922,7 @@ function setN(n){
   if(state.K < 1) state.K = 1;
   // 分割数が変わったら☆もリセット
   state.completedSet = [];
+  state.fukubikiPhase = 0;
 }
 
 /* ============================================================
@@ -1308,6 +1322,20 @@ function getRemainingBalls(){
   return out;
 }
 
+// 既に抽選済みのボール（重複なしモードのみ）
+function getDrawnBalls(){
+  if(!state.complete) return [];
+  const out = [];
+  for(const i of state.completedSet){
+    const sec = state.sections[i];
+    if(!sec || sec.blank) continue;
+    const label = (sec.label||'').trim();
+    if(!label) continue;
+    out.push({idx: i, label});
+  }
+  return out;
+}
+
 // ボール最大数N目安に応じてサイズを決める
 function fukubikiBallRadius(remainingCount){
   // 多いほど小さく，少ないほど大きく。残数ベースで動的に
@@ -1369,17 +1397,33 @@ function buildFukubikiSVG(){
   const ballC = fukubikiBallColor();
   const textC = fukubikiTextColor();
 
-  // 重複あり（state.complete === false）の場合は，箱内のスケルトンボールを描かない
-  // 「あと何個残っているか」が成立しないモードなので，すっきり見せる
-  const showInsideBalls = !!state.complete;
-  const remaining = showInsideBalls ? getRemainingBalls() : [];
-  const ballR = fukubikiBallRadius(Math.max(1, remaining.length));
-  const positions = showInsideBalls ? packBalls(
-    remaining.length,
-    box.left + 8, box.right - 8,
-    box.top + 6, box.bottom - 6,
-    ballR
-  ) : [];
+  // ボール配置：
+  // ・重複あり（state.complete === false）：全ボールを赤い右箱にまとめる
+  // ・重複なし phase 0：未抽選=赤(右)・抽選済=白(左)
+  // ・重複なし phase 1：未抽選=白(左)・抽選済=赤(右)（１巡完了で反転）
+  const remaining = getRemainingBalls();
+  const drawn = getDrawnBalls();
+  const totalForRadius = Math.max(1, remaining.length + drawn.length);
+  const ballR = fukubikiBallRadius(totalForRadius);
+
+  const padX = 8, padY = 6;
+  const leftHalfPack  = [box.left + padX,    box.halfMid - padX, box.top + padY, box.bottom - padY];
+  const rightHalfPack = [box.halfMid + padX, box.right - padX,   box.top + padY, box.bottom - padY];
+
+  let remainingPack, drawnPack;
+  if(!state.complete){
+    // 重複あり：全部右（赤）箱に。drawn は使わない
+    remainingPack = rightHalfPack;
+    drawnPack = null;
+  }else if(state.fukubikiPhase === 0){
+    remainingPack = rightHalfPack; // 赤
+    drawnPack     = leftHalfPack;  // 白
+  }else{
+    remainingPack = leftHalfPack;  // 白
+    drawnPack     = rightHalfPack; // 赤
+  }
+  const remainingPositions = packBalls(remaining.length, ...remainingPack, ballR);
+  const drawnPositions     = drawnPack ? packBalls(drawn.length, ...drawnPack, ballR) : [];
 
   const fontFam = escapeXml(getComputedStyle(document.body).fontFamily);
 
@@ -1428,21 +1472,26 @@ function buildFukubikiSVG(){
   parts.push(`<rect x="${box.halfMid - 6}" y="${box.top + 2}" width="12" height="${box.bottom - box.top - 4}" fill="url(#fb-shadow-side)" opacity="0.25" />`);
 
   // ===== ボール（箱の手前ガラス越しに見える） =====
+  // 1グループ描画ヘルパ
+  const drawBallGroup = (items, positionsArr)=>{
+    for(let k=0; k<items.length; k++){
+      const item = items[k];
+      const pos = positionsArr[k];
+      if(!pos) continue;
+      // ボール本体
+      parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="${ballC}" stroke="rgba(60,20,0,0.45)" stroke-width="0.7" opacity="0.94" />`);
+      // ハイライト（つや）
+      parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="url(#fb-ball-grad)" pointer-events="none" />`);
+      // 文字
+      const display = ballDisplayLabel(item.label, ballR);
+      const charCount = Array.from(display).length;
+      const fs = Math.max(6, Math.min(ballR * 0.95, ballR * 1.6 / Math.max(1, charCount)));
+      parts.push(`<text x="${pos.x.toFixed(2)}" y="${(pos.y+0.5).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${fs.toFixed(2)}" font-weight="800" fill="${textC}" font-family='${fontFam}' paint-order="stroke" stroke="rgba(255,255,255,0.55)" stroke-width="${(fs*0.06).toFixed(2)}">${escapeXml(display)}</text>`);
+    }
+  };
   parts.push('<g class="balls-inside">');
-  for(let k=0; k<remaining.length; k++){
-    const item = remaining[k];
-    const pos = positions[k];
-    if(!pos) continue;
-    // ボール本体
-    parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="${ballC}" stroke="rgba(60,20,0,0.45)" stroke-width="0.7" opacity="0.94" />`);
-    // ハイライト（つや）
-    parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="url(#fb-ball-grad)" pointer-events="none" />`);
-    // 文字
-    const display = ballDisplayLabel(item.label, ballR);
-    const charCount = Array.from(display).length;
-    const fs = Math.max(6, Math.min(ballR * 0.95, ballR * 1.6 / Math.max(1, charCount)));
-    parts.push(`<text x="${pos.x.toFixed(2)}" y="${(pos.y+0.5).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${fs.toFixed(2)}" font-weight="800" fill="${textC}" font-family='${fontFam}' paint-order="stroke" stroke="rgba(255,255,255,0.55)" stroke-width="${(fs*0.06).toFixed(2)}">${escapeXml(display)}</text>`);
-  }
+  drawBallGroup(remaining, remainingPositions);
+  drawBallGroup(drawn, drawnPositions);
   parts.push('</g>');
 
   // ===== 福引の墨字（毛筆風・まっすぐ・箱の半分にめいっぱい） =====
@@ -1492,7 +1541,7 @@ function buildFukubikiSVG(){
   parts.push(`<ellipse cx="${holeRightCx}" cy="${holeCy}" rx="34" ry="11" fill="none" stroke="#000" stroke-width="1.4" opacity="0.45" stroke-dasharray="2 3" />`);
 
   // 残個数表示（重複なしモードのみ。重複ありでは概念的に成り立たないので非表示）
-  if(showInsideBalls){
+  if(state.complete){
     const totalActive = state.sections.reduce((s, sec)=> s + (sec && !sec.blank && (sec.label||'').trim() ? 1 : 0), 0);
     const remainCount = remaining.length;
     parts.push(`<text x="${VW/2}" y="${VH-6}" text-anchor="middle" font-size="11" fill="rgba(0,0,0,0.55)" font-family='${fontFam}'>残り ${remainCount} / ${totalActive}</text>`);
@@ -1639,6 +1688,8 @@ document.getElementById('ctl-complete').addEventListener('change', e=>{
   // チェック＝「重複あり」モード → state.complete は false（=重複なしモードを解除）
   state.complete = !e.target.checked;
   state.completedSet = [];
+  // 紅白福引きBOX：必ず赤箱に全部入った状態から再開
+  state.fukubikiPhase = 0;
   winnerHighlights.clear();
   renderAll();
 });
@@ -1695,6 +1746,7 @@ document.getElementById('btn-clear').addEventListener('click', ()=>{
     state.sections[i] = {label:'', fillColor:null, textColor:null, blank:true};
   }
   state.completedSet = [];
+  state.fukubikiPhase = 0;
   winnerHighlights.clear();
   renderAll();
 });
@@ -1717,6 +1769,7 @@ function applyLabels(labels){
     state.sections[i].blank = labels[i] === '';
   }
   state.completedSet = [];
+  state.fukubikiPhase = 0;
   winnerHighlights.clear();
   renderAll();
 }
@@ -2272,12 +2325,14 @@ async function runDraw(){
     return;
   }
 
-  // 重複なしモード：完了済を除外。１巡完了なら☆をクリア。
+  // 重複なしモード：完了済を除外。１巡完了なら☆をクリアし，ボックスのphaseを反転。
   let candidates = allCandidates;
   if(state.complete){
     const remaining = allCandidates.filter(i => !state.completedSet.includes(i));
     if(remaining.length === 0){
       state.completedSet = [];
+      // １巡完了：次の１巡は逆方向（白→赤 もしくは 赤→白）に
+      state.fukubikiPhase = state.fukubikiPhase === 0 ? 1 : 0;
       candidates = allCandidates;
     }else{
       candidates = remaining;
@@ -2329,6 +2384,8 @@ async function runDraw(){
 }
 
 // 当選ボールを箱の穴から飛び出させるDOMアニメーション
+// 重複なしモードでは「source側の穴 → 反対側の穴に落ちる」演出に。
+// 重複ありモードでは従来どおり「赤い箱の穴から飛び出して空中で消える」。
 function flyOutBalls(winners){
   return new Promise(resolve=>{
     const stage = document.getElementById('fukubiki-stage');
@@ -2343,6 +2400,26 @@ function flyOutBalls(winners){
     const holeRightX = ((box.halfMid + box.right) / 2 + 8) * sx;
     const holeY = ((box.top + box.holeY) / 2) * sy;
 
+    // source（出てくる穴）と dest（落ちる穴）を決定
+    // 重複あり：sourceは常に赤，destは無し
+    // 重複なし phase 0：赤→白
+    // 重複なし phase 1：白→赤
+    let sourceX, destX;
+    let movesAcross = false;
+    if(!state.complete){
+      sourceX = holeRightX;
+      destX = null;
+    }else if(state.fukubikiPhase === 0){
+      sourceX = holeRightX;
+      destX   = holeLeftX;
+      movesAcross = true;
+    }else{
+      sourceX = holeLeftX;
+      destX   = holeRightX;
+      movesAcross = true;
+    }
+    const sourceY = holeY;
+
     const ballC = fukubikiBallColor();
     const textC = fukubikiTextColor();
     const ballPx = Math.max(36, Math.min(64, rect.width * 0.10));
@@ -2351,19 +2428,25 @@ function flyOutBalls(winners){
     winners.forEach((w, idx)=>{
       const sec = state.sections[w];
       const label = (sec && sec.label || '').trim() || `#${w+1}`;
-      // 当選ボールは必ず右（赤い箱）の穴から出てくる
-      const sourceX = holeRightX;
-      const sourceY = holeY;
 
-      // 飛び先：上方向に散らばらせる
       const spread = (idx - (winners.length-1)/2);
-      const midX = sourceX + spread * 28;
-      const midY = sourceY - 90;
-      const targetX = sourceX + spread * 70 + (Math.random()*40-20);
-      const targetY = sourceY - 220 - Math.random()*40;
+      let midX, midY, targetX, targetY;
+      if(movesAcross){
+        // 中央高所をピークに，反対側の穴へ落下
+        midX = (sourceX + destX) / 2 + spread * 10;
+        midY = sourceY - 130;
+        targetX = destX + spread * 14 + (Math.random()*16 - 8);
+        targetY = sourceY; // 反対側の穴の位置（同じ高さ）
+      }else{
+        // 重複あり：上方向に散らばらせて消える（従来動作）
+        midX = sourceX + spread * 28;
+        midY = sourceY - 90;
+        targetX = sourceX + spread * 70 + (Math.random()*40 - 20);
+        targetY = sourceY - 220 - Math.random()*40;
+      }
 
       const el = document.createElement('div');
-      el.className = 'fb-fly';
+      el.className = movesAcross ? 'fb-fly fb-fly-cross' : 'fb-fly';
       el.style.cssText = `
         left:${(sourceX - ballPx/2).toFixed(1)}px;
         top:${(sourceY - ballPx/2).toFixed(1)}px;
@@ -2382,7 +2465,7 @@ function flyOutBalls(winners){
       elems.push(el);
     });
 
-    const totalDuration = 1000 + winners.length * 120;
+    const totalDuration = (movesAcross ? 1400 : 1000) + winners.length * 120;
     setTimeout(()=>{
       elems.forEach(e => e.remove());
       resolve();
