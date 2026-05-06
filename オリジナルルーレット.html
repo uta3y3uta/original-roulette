@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-g">
+<meta name="build-rev" content="2026-05-06-h">
 <title>オリジナルルーレット</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1406,14 +1406,24 @@ function buildFukubikiSVG(){
     </linearGradient>
   </defs>`);
 
-  // 床の影
-  parts.push(`<ellipse cx="${VW/2}" cy="${box.bottom + 14}" rx="${(box.right-box.left)/2 - 5}" ry="9" fill="rgba(0,0,0,0.22)" />`);
+  // 床の影（側面の分すこし右に拡張）
+  parts.push(`<ellipse cx="${((box.left + box.right + 16)/2).toFixed(1)}" cy="${box.bottom + 14}" rx="${((box.right + 16 - box.left)/2 - 4).toFixed(1)}" ry="9" fill="rgba(0,0,0,0.22)" />`);
 
   // ===== 箱の本体（半透明＝スケルトン） =====
   // 左半分（白）
   parts.push(`<rect x="${box.left}" y="${box.top}" width="${box.halfMid - box.left}" height="${box.bottom - box.top}" fill="url(#fb-white-grad)" stroke="#1f1f1f" stroke-width="2.4" />`);
   // 右半分（テーマ色）
   parts.push(`<rect x="${box.halfMid}" y="${box.top}" width="${box.right - box.halfMid}" height="${box.bottom - box.top}" fill="url(#fb-theme-grad)" stroke="#1f1f1f" stroke-width="2.4" />`);
+
+  // ===== 右側面（立体感）— 前面右辺から奥行き方向に伸びる側面 =====
+  // 前面の右辺から奥行きベクトル(+16, -10)方向に伸ばした四角形。
+  // 上面のフタの傾きと一致するので，上の角でぴったり繋がる。
+  const sideRightPath = `M ${box.right} ${box.top} L ${box.right + 16} ${box.holeY} L ${box.right + 16} ${box.bottom - 10} L ${box.right} ${box.bottom} Z`;
+  // テーマ色で塗る
+  parts.push(`<path d="${sideRightPath}" fill="${themeC}" stroke="#1f1f1f" stroke-width="2.4" stroke-linejoin="round" />`);
+  // 影で少し暗くして「光が当たらない側面」感を出す
+  parts.push(`<path d="${sideRightPath}" fill="rgba(0,0,0,0.32)" stroke="none" pointer-events="none" />`);
+
   // 内側のうっすら陰影（左右の境界の奥行き感）
   parts.push(`<rect x="${box.halfMid - 6}" y="${box.top + 2}" width="12" height="${box.bottom - box.top - 4}" fill="url(#fb-shadow-side)" opacity="0.25" />`);
 
