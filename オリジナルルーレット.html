@@ -1023,13 +1023,12 @@ function buildRouletteSVG(opts){
 
     const charCount = Array.from(label).length;
     const baseFs = Math.max(6, 28 - N * 0.4);
-    const tentativeR = R * 0.72;
-    const tentativeArc = 2 * Math.PI * tentativeR / N;
+    // 配置半径：外側ぎりぎりまで寄せる
+    const r = R * 0.84;
+    const tentativeArc = 2 * Math.PI * r / N;
     let fs = Math.min(baseFs, tentativeArc / Math.max(1,charCount) * 1.05);
     fs = Math.max(5, fs) * fontScale;
 
-    // 配置半径
-    const r = R * 0.66;
     const tx = cx + r * Math.cos(aMid);
     const ty = cy + r * Math.sin(aMid);
 
@@ -1046,13 +1045,17 @@ function buildRouletteSVG(opts){
       ` paint-order="stroke" stroke="${stroke}" stroke-width="${(fs*0.08).toFixed(2)}" stroke-linejoin="round">${escapeXml(label)}</text>`
     );
 
-    // 当選マーク（今回スピン分は⭐, 過去の重複なし当選分は☆）
+    // 当選マーク：☆を文字の「下」（中心寄り）に配置
+    // 今回スピン分も，重複なしモードで残す☆も，同じ☆で表示
     if(winners.has(i) || completed.has(i)){
-      const mr = R * 0.88;
+      // 星のサイズは文字サイズに合わせて調整（分割数が多い時も見やすく）
+      const starSize = Math.max(5, fs * 0.7);
+      // 文字の内側端から少し離して配置
+      const mr = r - fs * 0.85 - starSize * 0.5;
       const mx = cx + mr * Math.cos(aMid);
       const my = cy + mr * Math.sin(aMid);
-      const mark = winners.has(i) ? '⭐' : '☆';
-      parts.push(`<text x="${mx.toFixed(2)}" y="${my.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${(R*0.10).toFixed(1)}" fill="#facc15" stroke="#7c2d12" stroke-width="0.6" paint-order="stroke">${mark}</text>`);
+      // 星は文字と同じ向きに回す（読み手から見て文字の下に出る）
+      parts.push(`<text x="0" y="0" transform="translate(${mx.toFixed(2)},${my.toFixed(2)}) rotate(${rotDeg.toFixed(2)})" text-anchor="middle" dominant-baseline="middle" font-size="${starSize.toFixed(1)}" fill="#facc15" stroke="#7c2d12" stroke-width="0.7" paint-order="stroke">☆</text>`);
     }
   }
 
@@ -1789,14 +1792,17 @@ async function runSpin(){
     return;
   }
 
-  // 重複なしモード：当選済みを除外。残り候補が足りなければ☆をリセットしてやり直し
+  // 重複なしモード：当選済みを除外して未当選から選ぶ。
+  // 全項目当選済（=１巡完了）になった次のスピンで☆をリセットして再スタート。
   let candidates = allCandidates;
   if(state.complete){
     const remaining = allCandidates.filter(i => !state.completedSet.includes(i));
-    if(remaining.length < K){
+    if(remaining.length === 0){
+      // １巡完了 → ☆をクリアして新しい１巡を開始
       state.completedSet = [];
       candidates = allCandidates;
     }else{
+      // 未当選があるうちはそこから選ぶ（☆は維持）
       candidates = remaining;
     }
   }
