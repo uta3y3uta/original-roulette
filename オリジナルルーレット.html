@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-e">
+<meta name="build-rev" content="2026-05-06-f">
 <title>オリジナルルーレット</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1435,10 +1435,13 @@ function buildFukubikiSVG(){
   }
   parts.push('</g>');
 
-  // ===== 福引の墨字（毛筆風・大きくまっすぐ） =====
-  const charY = (box.top + box.bottom) / 2 + 8;
-  // 半分の幅にほぼ目一杯収まるよう大きく
-  const charSize = Math.min((box.halfMid - box.left) * 1.10, (box.bottom - box.top) * 1.00);
+  // ===== 福引の墨字（毛筆風・大きくまっすぐ・箱の半分に収まる） =====
+  const charY = (box.top + box.bottom) / 2 + 4;
+  // 箱の左右半分にしっかり収まるサイズ（Yuji Mai はやや横広めなので余裕を持たせる）
+  // 福は白半分（box.left〜halfMid），引は赤半分（halfMid〜right）にそれぞれ収める
+  const halfWidth  = box.halfMid - box.left;            // 198
+  const halfHeight = box.bottom - box.top;              // 252
+  const charSize = Math.min(halfWidth * 0.84, halfHeight * 0.86);
   const charFontFam = "'Yuji Mai','Yuji Boku','Yu Mincho','YuMincho','Hiragino Mincho ProN',serif";
   // 墨だまり風シャドウ（下側に滲み）— SVGフィルタ
   if(parts.findIndex(p=>p.includes('id="fb-ink-shadow"')) === -1){
