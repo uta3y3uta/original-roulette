@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-j">
+<meta name="build-rev" content="2026-05-06-k">
 <title>オリジナルルーレット</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -400,6 +400,10 @@
     overflow:hidden;align-items:center;justify-content:center;flex-direction:column
   }
   #reveal-overlay.show{display:flex;animation:reveal-fade .5s ease}
+  #reveal-overlay.show-particles-only{background:transparent;animation:none}
+  #reveal-overlay.show-particles-only .reveal-title,
+  #reveal-overlay.show-particles-only .reveal-list,
+  #reveal-overlay.show-particles-only .reveal-actions{display:none}
   @keyframes reveal-fade{from{opacity:0}to{opacity:1}}
   .reveal-title{
     color:#fff;font-size:54px;font-weight:900;text-align:center;
@@ -560,6 +564,83 @@
     100% {transform:translate(var(--fb-tx),var(--fb-ty)) scale(0.45) rotate(540deg);opacity:0}
   }
 
+  /* ===== カードめくり ===== */
+  .card-stage{
+    position:relative;width:100%;max-width:680px;
+    display:flex;align-items:center;justify-content:center;
+    padding:6px 4px;
+  }
+  .card-grid{
+    display:grid;width:100%;
+    grid-template-columns:repeat(var(--card-cols,5),1fr);
+    gap:8px;justify-items:stretch;align-items:stretch;
+  }
+  .card-cell{
+    aspect-ratio:3/4;
+    perspective:1000px;
+    cursor:pointer;
+    user-select:none;-webkit-user-select:none;
+  }
+  .card-inner{
+    position:relative;width:100%;height:100%;
+    transform-style:preserve-3d;
+    transition:transform 0.55s cubic-bezier(0.22,1.1,0.36,1);
+    border-radius:10px;
+  }
+  .card-cell.flipped .card-inner{transform:rotateY(180deg)}
+  .card-cell.shuffling .card-inner{transition:none}
+  .card-front, .card-back{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    box-shadow:0 4px 12px rgba(0,0,0,0.18), inset 0 -3px 0 rgba(0,0,0,0.08);
+    overflow:hidden;
+    font-weight:800;
+    border:1.5px solid rgba(0,0,0,0.12);
+  }
+  .card-front{
+    background:var(--card-front,#ec4899);
+    color:rgba(255,255,255,0.92);
+    font-size:24px;letter-spacing:.05em;
+    background-image:
+      linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.10) 100%),
+      var(--card-front,#ec4899);
+  }
+  .card-front .card-front-mark{
+    font-size:30px;font-weight:900;
+    text-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .card-back{
+    background:var(--card-back,#fef3c7);
+    color:var(--card-fg,#1f2937);
+    transform:rotateY(180deg);
+    text-align:center;line-height:1.25;
+    padding:6px;
+    font-size:var(--card-font-size,18px);
+    word-break:break-word;
+  }
+  .card-cell.blank-cell{opacity:.4;pointer-events:none}
+  .card-cell.shake-bad{animation:card-shake 0.32s ease-in-out}
+  @keyframes card-shake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    50%{transform:translateX(6px)}
+    75%{transform:translateX(-3px)}
+  }
+  .btn-shuffle{
+    margin-top:6px;
+    padding:10px 22px;font-size:14px;font-weight:700;
+    background:linear-gradient(135deg,#3b82f6,#06b6d4);
+    color:#fff;border:none;border-radius:999px;
+    box-shadow:0 4px 12px rgba(59,130,246,0.32),inset 0 -2px 0 rgba(0,0,0,0.12);
+    cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;
+    letter-spacing:.04em;
+  }
+  .btn-shuffle:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(59,130,246,0.42)}
+  .btn-shuffle:active{transform:translateY(0)}
+  .btn-shuffle:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
   /* 共有ビュー：編集UIを隠して大きく */
   body.share-view .editor-panel{display:none !important}
   body.share-view #btn-finish,
@@ -624,20 +705,20 @@
         <span id="ctl-fontscale-val" class="hint">1.00x</span>
       </div>
 
-      <label>テーマ色</label>
+      <label>色１</label>
       <div class="row">
         <span id="ctl-theme-wrap"></span>
         <label><input type="checkbox" id="ctl-gradient"> 自動グラデーション</label>
       </div>
 
-      <label>文字色（共通）</label>
-      <div class="row">
-        <span id="ctl-textcolor-wrap"></span>
-      </div>
-
-      <label>境界線色</label>
+      <label>色２</label>
       <div class="row">
         <span id="ctl-strokecolor-wrap"></span>
+      </div>
+
+      <label>文字色</label>
+      <div class="row">
+        <span id="ctl-textcolor-wrap"></span>
       </div>
     </div>
 
@@ -674,6 +755,7 @@
     <div class="mode-toggle editor-panel" role="tablist">
       <button class="mode-btn active" data-mode="roulette" type="button">🎡 ルーレット</button>
       <button class="mode-btn" data-mode="fukubiki" type="button">🎁 紅白福引き</button>
+      <button class="mode-btn" data-mode="card" type="button">🃏 カードめくり</button>
     </div>
 
     <div class="roulette-wrap">
@@ -687,14 +769,19 @@
         <div class="fukubiki-flying-balls" id="fukubiki-flying"></div>
       </div>
 
+      <div class="card-stage" id="card-stage" style="display:none">
+        <div class="card-grid" id="card-grid"></div>
+      </div>
+
       <div class="roulette-controls">
         <div class="winner-count-row">
-          🎯 当選数 <input type="number" id="ctl-K2" min="1" max="50" value="1"> 個
+          <span id="ctl-K2-wrap">🎯 当選数 <input type="number" id="ctl-K2" min="1" max="50" value="1"> 個</span>
           <label style="margin-left:10px;font-size:13px;font-weight:600;cursor:pointer">
             <input type="checkbox" id="ctl-complete"> 重複あり
           </label>
         </div>
         <button class="btn-spin" id="btn-spin">🎡 回転</button>
+        <button class="btn-shuffle" id="btn-shuffle" type="button" style="display:none">🔀 シャッフル</button>
       </div>
 
       <div class="preview-info" id="spin-status"></div>
@@ -871,13 +958,16 @@ const state = loadState() || {
   textColor: DEFAULT_TEXT,
   strokeColor: DEFAULT_STROKE,
   rotation: 0,
+  fukubikiPhase: 0,
+  cardOrder: [],
+  cardFlipped: [],
   sections: defaultLabels(8)
 };
 ensureStateIntegrity(state);
 
 function ensureStateIntegrity(s){
   if(typeof s.uiTheme !== 'string') s.uiTheme = 'pastel';
-  if(s.mode !== 'roulette' && s.mode !== 'fukubiki') s.mode = 'roulette';
+  if(s.mode !== 'roulette' && s.mode !== 'fukubiki' && s.mode !== 'card') s.mode = 'roulette';
   if(typeof s.N !== 'number') s.N = 8;
   if(typeof s.K !== 'number') s.K = 1;
   if(typeof s.complete !== 'boolean') s.complete = true;
@@ -904,6 +994,14 @@ function ensureStateIntegrity(s){
   if(s.K > s.N) s.K = s.N;
   // completedSet を有効インデックスに制限
   s.completedSet = s.completedSet.filter(i => Number.isInteger(i) && i >= 0 && i < s.N);
+  // カードめくり：cardOrder と cardFlipped の正規化
+  if(!Array.isArray(s.cardOrder) || s.cardOrder.length !== s.N
+     || !s.cardOrder.every(i => Number.isInteger(i) && i >= 0 && i < s.N)
+     || (new Set(s.cardOrder)).size !== s.N){
+    s.cardOrder = Array.from({length:s.N}, (_,i)=>i);
+  }
+  if(!Array.isArray(s.cardFlipped)) s.cardFlipped = [];
+  s.cardFlipped = s.cardFlipped.filter(i => Number.isInteger(i) && i >= 0 && i < s.N);
 }
 
 function loadState(){
@@ -933,6 +1031,9 @@ function setN(n){
   // 分割数が変わったら☆もリセット
   state.completedSet = [];
   state.fukubikiPhase = 0;
+  // カードめくりも初期化
+  state.cardOrder = Array.from({length:n}, (_,i)=>i);
+  state.cardFlipped = [];
 }
 
 /* ============================================================
@@ -1040,7 +1141,7 @@ function makeColorPicker(opts){
   if(opts.allowReset){
     const r = document.createElement('button');
     r.type = 'button'; r.className = 'cpicker-reset';
-    r.textContent = '既定（テーマ色）に戻す';
+    r.textContent = '既定（色１）に戻す';
     r.addEventListener('click', e=>{
       e.stopPropagation(); setVal(null); closePop();
       if(opts.onReset) opts.onReset();
@@ -1095,17 +1196,32 @@ function escapeXml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 }
 
+// 重複なしモード時，盤面に表示するセクターの「元index」リスト。
+// 当選済（completedSet）のセクターは盤面から取り除かれる。
+// 重複ありモードでは全インデックスをそのまま返す。
+function getRouletteVisibleIndices(){
+  const completed = state.complete ? new Set(state.completedSet) : new Set();
+  const out = [];
+  for(let i=0; i<state.N; i++){
+    if(completed.has(i)) continue;
+    out.push(i);
+  }
+  return out;
+}
+
 function buildRouletteSVG(opts){
-  // opts: {winnerSet:Set<index>, completedSet:Set<index>}
+  // opts: {winnerSet:Set<index>}  (★は廃止。当選セクターは枠ハイライトのみ)
   const VBOX = 400;
   const cx = VBOX/2, cy = VBOX/2;
   const R = VBOX/2 - 6;
-  const N = state.N;
   const stroke = state.strokeColor || '#fff';
   const strokeW = Math.max(1.0, VBOX*0.004);
   const fontScale = state.fontSizeScale || 1.0;
   const winners = (opts && opts.winnerSet) || new Set();
-  const completed = (opts && opts.completedSet) || new Set();
+
+  // 盤面に表示するセクター（重複なしモードでは当選済を除外）
+  const visible = getRouletteVisibleIndices();
+  const Nv = visible.length;
 
   const parts = [];
   parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VBOX} ${VBOX}" width="100%" height="100%">`);
@@ -1119,16 +1235,26 @@ function buildRouletteSVG(opts){
   </defs>`);
   parts.push(`<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#ffffff" stroke="#be185d" stroke-width="${strokeW*1.5}"/>`);
 
-  // セクター
-  for(let i=0;i<N;i++){
+  if(Nv === 0){
+    // 全項目が当選済 → 空の盤面に「リセットで再スタート」風の文言
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#f9fafb" stroke="${stroke}" stroke-width="${strokeW}"/>`);
+    parts.push(`<text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="18" font-weight="700" fill="#6b7280">🎉 全部出ました！</text>`);
+    parts.push(`<text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="13" fill="#9ca3af">もう一度「回転」でリセットして再スタート</text>`);
+    parts.push('</svg>');
+    return parts.join('');
+  }
+
+  // セクター（盤面表示順 p=0..Nv-1，原indexは visible[p]）
+  for(let p=0; p<Nv; p++){
+    const i = visible[p];
     const sec = state.sections[i] || {label:'', fillColor:null, blank:false};
-    const a1 = -Math.PI/2 + i * (2*Math.PI/N);
-    const a2 = -Math.PI/2 + (i+1) * (2*Math.PI/N);
+    const a1 = -Math.PI/2 + p * (2*Math.PI/Nv);
+    const a2 = -Math.PI/2 + (p+1) * (2*Math.PI/Nv);
     const x1 = cx + R*Math.cos(a1);
     const y1 = cy + R*Math.sin(a1);
     const x2 = cx + R*Math.cos(a2);
     const y2 = cy + R*Math.sin(a2);
-    const largeArc = (2*Math.PI/N) > Math.PI ? 1 : 0;
+    const largeArc = (2*Math.PI/Nv) > Math.PI ? 1 : 0;
 
     let fill;
     if(sec.blank){
@@ -1136,48 +1262,45 @@ function buildRouletteSVG(opts){
     }else if(sec.fillColor){
       fill = sec.fillColor;
     }else if(state.autoGradient){
-      fill = gradientColor(state.themeColor, i, N);
+      fill = gradientColor(state.themeColor, p, Nv);
     }else{
       fill = state.themeColor;
     }
 
     let d;
-    if(N === 1){
+    if(Nv === 1){
       d = `M ${cx-R} ${cy} A ${R} ${R} 0 1 1 ${cx+R} ${cy} A ${R} ${R} 0 1 1 ${cx-R} ${cy} Z`;
     }else{
       d = `M ${cx} ${cy} L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
     }
     parts.push(`<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" stroke-linejoin="round"/>`);
 
-    // 当選済セクション：枠を金色＋影
+    // 当選セクション：枠を金色＋影（演出ハイライト。次のスピンで自然消滅する）
     if(winners.has(i)){
       parts.push(`<path d="${d}" fill="none" stroke="#fbbf24" stroke-width="${strokeW*2.5}" stroke-linejoin="round" opacity="0.9"/>`);
     }
   }
 
   // ラベル
-  for(let i=0;i<N;i++){
+  for(let p=0; p<Nv; p++){
+    const i = visible[p];
     const sec = state.sections[i] || {label:'', blank:false};
     const label = (sec.label||'').trim();
     if(!label || sec.blank) continue;
-    const aMid = -Math.PI/2 + (i + 0.5) * (2*Math.PI/N);
+    const aMid = -Math.PI/2 + (p + 0.5) * (2*Math.PI/Nv);
 
     const charCount = Array.from(label).length;
-    const baseFs = Math.max(6, 28 - N * 0.4);
-    // フォントサイズを先に決定（仮の半径で弧長から計算）
+    const baseFs = Math.max(6, 28 - Nv * 0.4);
     const tentativeR = R * 0.88;
-    const tentativeArc = 2 * Math.PI * tentativeR / N;
+    const tentativeArc = 2 * Math.PI * tentativeR / Nv;
     let fs = Math.min(baseFs, tentativeArc / Math.max(1,charCount) * 1.05);
     fs = Math.max(5, fs) * fontScale;
 
-    // 配置半径：文字の外側端が円のはじっこぎりぎりに来るよう動的に決定
-    const edgeMargin = R * 0.018; // 外周からの最小マージン（約1.8%）
+    const edgeMargin = R * 0.018;
     const r = R - edgeMargin - fs * 0.5;
 
     const tx = cx + r * Math.cos(aMid);
     const ty = cy + r * Math.sin(aMid);
-
-    // 文字の頭が外側を向く
     const rotDeg = aMid * 180 / Math.PI + 90;
 
     const textColor = sec.textColor || state.textColor || '#000';
@@ -1189,20 +1312,6 @@ function buildRouletteSVG(opts){
       ` font-size="${fs.toFixed(2)}" font-weight="700"`+
       ` paint-order="stroke" stroke="${stroke}" stroke-width="${(fs*0.08).toFixed(2)}" stroke-linejoin="round">${escapeXml(label)}</text>`
     );
-
-    // 当選マーク：★（塗りつぶし）を文字の「下」（中心寄り）に大きく配置
-    // 今回スピン分も，重複なしモードで残す★も，同じ★で表示
-    if(winners.has(i) || completed.has(i)){
-      // 星のサイズを大きく（文字サイズに合わせつつ最低でも目立つサイズ）
-      const starSize = Math.max(9, fs * 1.15);
-      // 文字の内側端から少し離して配置（大きいぶん中心寄りに）
-      const mr = r - fs * 0.95 - starSize * 0.55;
-      const mx = cx + mr * Math.cos(aMid);
-      const my = cy + mr * Math.sin(aMid);
-      // 星は文字と同じ向きに回す（読み手から見て文字の下に出る）
-      // 塗りつぶし★ + 濃い縁取りで視認性UP，淡い影でグロウ感
-      parts.push(`<text x="0" y="0" transform="translate(${mx.toFixed(2)},${my.toFixed(2)}) rotate(${rotDeg.toFixed(2)})" text-anchor="middle" dominant-baseline="middle" font-size="${starSize.toFixed(1)}" fill="#fde047" stroke="#7c2d12" stroke-width="${(starSize*0.13).toFixed(2)}" paint-order="stroke" style="filter:drop-shadow(0 0 ${(starSize*0.18).toFixed(1)}px rgba(253,224,71,0.85))">★</text>`);
-    }
   }
 
   parts.push('</svg>');
@@ -1254,6 +1363,7 @@ function renderAll(){
   updateBulkBlankCheckbox();
   renderRoulette();
   renderFukubiki();
+  renderCards();
   applyModeToUI();
   saveState();
 }
@@ -1287,11 +1397,15 @@ function buildPointersSVG(K){
 
 function renderRoulette(){
   const disc = document.getElementById('roulette-disc');
-  const completedSet = state.complete ? new Set(state.completedSet) : new Set();
-  disc.innerHTML = buildRouletteSVG({winnerSet: winnerHighlights, completedSet});
+  disc.innerHTML = buildRouletteSVG({winnerSet: winnerHighlights});
   applyRotationToPreview();
   const pwrap = document.getElementById('roulette-pointers');
-  if(pwrap) pwrap.innerHTML = buildPointersSVG(state.K);
+  if(pwrap){
+    // 有効セクター数より K が大きい場合はポインタ数も丸める
+    const Nv = getRouletteVisibleIndices().length;
+    const Keff = Math.max(1, Math.min(state.K, Math.max(1, Nv)));
+    pwrap.innerHTML = buildPointersSVG(Keff);
+  }
 }
 function applyRotationToPreview(){
   const disc = document.getElementById('roulette-disc');
@@ -1578,13 +1692,227 @@ function renderFukubiki(){
   svgWrap.innerHTML = buildFukubikiSVG();
 }
 
+/* ============================================================
+   カードめくり：レンダリング
+   ============================================================ */
+function calcCardCols(N){
+  // 横の枚数を「sqrt(N) を切り上げ」基準に決定。表示の収まりを優先。
+  if(N <= 4) return 2;
+  if(N <= 9) return 3;
+  if(N <= 16) return 4;
+  if(N <= 25) return 5;
+  if(N <= 36) return 6;
+  return 7;
+}
+function renderCards(){
+  const grid = document.getElementById('card-grid');
+  if(!grid) return;
+  const N = state.N;
+  const cols = calcCardCols(N);
+  grid.style.setProperty('--card-cols', cols);
+
+  // フォントサイズはセル数で大体合わせる
+  let fontPx;
+  if(cols <= 3) fontPx = 22;
+  else if(cols === 4) fontPx = 18;
+  else if(cols === 5) fontPx = 16;
+  else if(cols === 6) fontPx = 14;
+  else fontPx = 12;
+
+  const flipped = new Set(state.cardFlipped);
+
+  grid.innerHTML = '';
+  for(let pos=0; pos<N; pos++){
+    const idx = state.cardOrder[pos];
+    const sec = state.sections[idx] || {label:'', blank:true};
+    const isBlank = !!sec.blank || !((sec.label||'').trim());
+    const cell = document.createElement('div');
+    cell.className = 'card-cell';
+    cell.dataset.pos = String(pos);
+    cell.dataset.idx = String(idx);
+    if(isBlank) cell.classList.add('blank-cell');
+    if(flipped.has(idx)) cell.classList.add('flipped');
+
+    // 色１＝表，色２＝裏（テキスト面），文字色＝裏の文字色
+    const frontC = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, idx, state.N) : state.themeColor);
+    const backC  = state.strokeColor || DEFAULT_STROKE;
+    const fgC    = sec.textColor || state.textColor || '#1f2937';
+
+    cell.style.setProperty('--card-front', frontC);
+    cell.style.setProperty('--card-back', backC);
+    cell.style.setProperty('--card-fg', fgC);
+    cell.style.setProperty('--card-font-size', fontPx + 'px');
+
+    const inner = document.createElement('div');
+    inner.className = 'card-inner';
+
+    const front = document.createElement('div');
+    front.className = 'card-front';
+    const mark = document.createElement('div');
+    mark.className = 'card-front-mark';
+    mark.textContent = '?';
+    front.appendChild(mark);
+
+    const back = document.createElement('div');
+    back.className = 'card-back';
+    back.textContent = (sec.label || '').trim() || '（空白）';
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    cell.appendChild(inner);
+
+    cell.addEventListener('click', onCardClick);
+    grid.appendChild(cell);
+  }
+}
+
+let cardRevertTimer = null;
+function onCardClick(e){
+  const cell = e.currentTarget;
+  if(cell.classList.contains('blank-cell')) return;
+  const idx = Number(cell.dataset.idx);
+  if(!Number.isInteger(idx)) return;
+
+  const isComplete = !!state.complete; // true=重複なし
+  const flipped = new Set(state.cardFlipped);
+
+  if(flipped.has(idx)){
+    // 既にめくられているカード：重複なしならノーアクション，重複ありなら戻す
+    if(!isComplete){
+      cell.classList.remove('flipped');
+      const i = state.cardFlipped.indexOf(idx);
+      if(i >= 0) state.cardFlipped.splice(i, 1);
+      saveState();
+    }
+    return;
+  }
+
+  // 1巡完了チェック（重複なし）
+  if(isComplete){
+    const candidates = getCandidates();
+    const remaining = candidates.filter(i => !flipped.has(i));
+    if(remaining.length === 0){
+      // 1巡完了済 → 全カードを裏返してリセット
+      for(const c of document.querySelectorAll('.card-cell.flipped')){
+        c.classList.remove('flipped');
+      }
+      state.cardFlipped = [];
+      saveState();
+      return;
+    }
+  }
+
+  // めくる（カード自体が当選演出）
+  cell.classList.add('flipped');
+  state.cardFlipped.push(idx);
+  saveState();
+
+  // ささやかな祝祭演出
+  launchConfettiFromCard(cell);
+
+  if(!isComplete){
+    // 重複あり：少し見せたあと自動的に裏返す
+    setTimeout(()=>{
+      cell.classList.remove('flipped');
+      const i = state.cardFlipped.indexOf(idx);
+      if(i >= 0) state.cardFlipped.splice(i, 1);
+      saveState();
+    }, 1800);
+  }
+}
+
+function launchConfettiFromCard(cell){
+  const overlay = document.getElementById('reveal-overlay');
+  if(!overlay) return;
+  const r = cell.getBoundingClientRect();
+  const cx = r.left + r.width/2;
+  const cy = r.top + r.height/2;
+  const colors = ['#ec4899','#fbbf24','#a855f7','#3b82f6','#10b981','#f43f5e','#06b6d4','#facc15'];
+  // confetti は overlay 内に配置（fixed 配置のため画面座標でOK）
+  const wasShow = overlay.classList.contains('show');
+  if(!wasShow){
+    overlay.style.pointerEvents = 'none';
+    overlay.classList.add('show');
+    overlay.classList.add('show-particles-only');
+  }
+  for(let i=0;i<24;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = cx + 'px';
+    el.style.top = cy + 'px';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    const dur = 1.2 + Math.random() * 1.4;
+    const delay = Math.random() * 0.2;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = delay + 's';
+    el.style.transform = `rotate(${Math.random()*360}deg)`;
+    if(Math.random() > 0.5){ el.style.width = '8px'; el.style.height = '12px'; }
+    if(Math.random() > 0.7){ el.style.borderRadius = '50%'; el.style.width = '10px'; el.style.height = '10px'; }
+    overlay.appendChild(el);
+    setTimeout(()=>el.remove(), (dur + delay) * 1000 + 200);
+  }
+  // particles だけ表示中なら一定時間後にオーバーレイを閉じる
+  if(!wasShow){
+    setTimeout(()=>{
+      overlay.classList.remove('show');
+      overlay.classList.remove('show-particles-only');
+      overlay.style.pointerEvents = '';
+    }, 2800);
+  }
+}
+
+function shuffleCards(){
+  const N = state.N;
+  if(N < 2) return;
+  // フィッシャー–イェーツ
+  const arr = state.cardOrder.slice();
+  for(let i=arr.length-1; i>0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  state.cardOrder = arr;
+  // めくり状態は idx 基準で保持（位置と独立）
+  // シャッフル時はフリップ遷移を抑止するため一時的にクラスを付ける
+  const grid = document.getElementById('card-grid');
+  if(grid){
+    grid.querySelectorAll('.card-cell').forEach(c => c.classList.add('shuffling'));
+  }
+  renderCards();
+  // 次フレームで shuffling クラスを外す（描画後にトランジション再有効化）
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const g = document.getElementById('card-grid');
+      if(g) g.querySelectorAll('.card-cell.shuffling').forEach(c => c.classList.remove('shuffling'));
+    });
+  });
+  saveState();
+}
+
 function applyModeToUI(){
   const isFuku = state.mode === 'fukubiki';
-  document.getElementById('roulette-stage').style.display = isFuku ? 'none' : '';
+  const isCard = state.mode === 'card';
+  const isRoul = state.mode === 'roulette';
+  document.getElementById('roulette-stage').style.display = isRoul ? '' : 'none';
   document.getElementById('fukubiki-stage').style.display = isFuku ? '' : 'none';
-  document.getElementById('preview-title').textContent = isFuku ? '紅白福引きBOX' : 'ルーレット';
+  const cardStage = document.getElementById('card-stage');
+  if(cardStage) cardStage.style.display = isCard ? '' : 'none';
+
+  document.getElementById('preview-title').textContent =
+    isFuku ? '紅白福引きBOX' : (isCard ? 'カードめくり' : 'ルーレット');
+
   const btn = document.getElementById('btn-spin');
-  if(btn) btn.textContent = isFuku ? '🎁 引く' : '🎡 回転';
+  if(btn){
+    btn.textContent = isFuku ? '🎁 引く' : '🎡 回転';
+    // カードめくりではメインボタンを隠し，カード自体をタップして引く
+    btn.style.display = isCard ? 'none' : '';
+  }
+  const shuffleBtn = document.getElementById('btn-shuffle');
+  if(shuffleBtn) shuffleBtn.style.display = isCard ? '' : 'none';
+
+  // カードめくりでは「当選数」入力ブロックを隠す（重複ありトグルは残す）
+  const kWrap = document.getElementById('ctl-K2-wrap');
+  if(kWrap) kWrap.style.display = isCard ? 'none' : '';
+
   // モード切替ボタンのactive状態
   document.querySelectorAll('.mode-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.mode === state.mode);
@@ -1615,7 +1943,7 @@ function renderSectionList(){
     const fillInitial = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, i, state.N) : state.themeColor);
     const fillPicker = makeColorPicker({
       initial: fillInitial,
-      title: '塗り色（右クリックでテーマ色に戻す）',
+      title: '塗り色（右クリックで色１に戻す）',
       label: '塗り色',
       allowReset: true,
       onChange: v=>{ sec.fillColor = v; schedulePreview(); },
@@ -1703,6 +2031,8 @@ document.getElementById('ctl-complete').addEventListener('change', e=>{
   state.completedSet = [];
   // 紅白福引きBOX：必ず赤箱に全部入った状態から再開
   state.fukubikiPhase = 0;
+  // カードめくり：めくり状態もリセット
+  state.cardFlipped = [];
   winnerHighlights.clear();
   renderAll();
 });
@@ -1744,7 +2074,7 @@ document.getElementById('bulk-clear-labels').addEventListener('click', ()=>{
   renderAll();
 });
 document.getElementById('bulk-reset-colors').addEventListener('click', ()=>{
-  if(!confirm('個別色（塗り色・文字色）をすべて「既定（テーマ色）」に戻しますか？')) return;
+  if(!confirm('個別色（塗り色・文字色）をすべて「既定（色１）」に戻しますか？')) return;
   for(let i=0;i<state.N;i++){
     if(!state.sections[i]) continue;
     state.sections[i].fillColor = null;
@@ -1760,6 +2090,8 @@ document.getElementById('btn-clear').addEventListener('click', ()=>{
   }
   state.completedSet = [];
   state.fukubikiPhase = 0;
+  state.cardOrder = Array.from({length:state.N}, (_,i)=>i);
+  state.cardFlipped = [];
   winnerHighlights.clear();
   renderAll();
 });
@@ -1783,6 +2115,8 @@ function applyLabels(labels){
   }
   state.completedSet = [];
   state.fukubikiPhase = 0;
+  state.cardOrder = Array.from({length:state.N}, (_,i)=>i);
+  state.cardFlipped = [];
   winnerHighlights.clear();
   renderAll();
 }
@@ -2147,42 +2481,43 @@ function pointerAngleDeg(p, K){
   return -90 + p * 360 / K;
 }
 
-// 与えられた回転角度のとき，ポインタpの先にあるセクター index を返す
-function sectorAtPointer(rotation, p, K){
-  const N = state.N;
-  const sectorWidth = 360 / N;
+// 与えられた回転角度のとき，ポインタpの先にある「盤面表示位置」を返す（0..Nv-1）
+function sectorPositionAtPointer(rotation, p, K, Nv){
+  const sectorWidth = 360 / Nv;
   const pAngle = pointerAngleDeg(p, K);
-  // セクター i の回転後中心 = -90 + (i+0.5)*sectorWidth + rotation
-  // pAngle == sectorMid → i + 0.5 = (pAngle + 90 - rotation) / sectorWidth
   let v = pAngle + 90 - rotation;
   v = ((v % 360) + 360) % 360;
-  return Math.floor(v / sectorWidth) % N;
+  return Math.floor(v / sectorWidth) % Nv;
 }
 
-// rotation でのK個ポインタすべての当選セクター
-// excludedSet を渡すと「★済（重複なしモードの当選済）や空白」も時計回りにスキップする
-// 同一スピン内で K個が重複しないことを最優先（"used"を絶対に避け，excludedはできる限り避ける）
+// rotation でのK個ポインタすべての当選セクター（原index配列）
+// 盤面に出ているセクター（visible配列）の中から，重複しないように選ぶ
 function calcWinners(rotation, K, excludedSet){
-  const N = state.N;
+  const visible = getRouletteVisibleIndices();
+  const Nv = visible.length;
+  if(Nv === 0) return [];
   const excluded = excludedSet instanceof Set ? excludedSet : new Set();
-  const raw = [];
-  for(let p=0;p<K;p++) raw.push(sectorAtPointer(rotation, p, K));
+  // visible内の表示位置p (0..Nv-1) を計算
+  const rawPositions = [];
+  for(let p=0; p<K; p++) rawPositions.push(sectorPositionAtPointer(rotation, p, K, Nv));
   const used = new Set();
   const final = [];
-  for(const w of raw){
-    let idx = w, tries = 0;
-    // 1st pass: usedも excluded も避ける（１巡内重複も★済重複も両方回避）
-    while((used.has(idx) || excluded.has(idx)) && tries < N){
-      idx = (idx + 1) % N;
+  for(const p0 of rawPositions){
+    let pos = p0, tries = 0;
+    let idx = visible[pos];
+    while((used.has(idx) || excluded.has(idx)) && tries < Nv){
+      pos = (pos + 1) % Nv;
+      idx = visible[pos];
       tries++;
     }
-    // 全周しても見つからなかった = 残りはみんな used or excluded
-    // → used だけは絶対回避，excludedは諦めてOK（１巡終盤の救済）
     if(used.has(idx) || excluded.has(idx)){
-      idx = w;
+      // 救済：usedだけは絶対避ける
+      pos = p0;
+      idx = visible[pos];
       let t2 = 0;
-      while(used.has(idx) && t2 < N){
-        idx = (idx + 1) % N;
+      while(used.has(idx) && t2 < Nv){
+        pos = (pos + 1) % Nv;
+        idx = visible[pos];
         t2++;
       }
     }
@@ -2207,11 +2542,15 @@ function getCandidates(){
   return cand;
 }
 
-// 上のポインタ(=p=0)に target セクターが来る回転角度
+// 上のポインタ(=p=0)に target セクター（原index）が来る回転角度
 function rotationForSectorAtTop(targetSector, jitterFrac){
-  const N = state.N;
-  const sectorWidth = 360 / N;
-  const sectorMid = -90 + (targetSector + 0.5) * sectorWidth;
+  const visible = getRouletteVisibleIndices();
+  const Nv = visible.length;
+  if(Nv === 0) return state.rotation || 0;
+  const pos = visible.indexOf(targetSector);
+  if(pos < 0) return state.rotation || 0;
+  const sectorWidth = 360 / Nv;
+  const sectorMid = -90 + (pos + 0.5) * sectorWidth;
   let r = -90 - sectorMid;
   r += (jitterFrac || 0) * sectorWidth;
   return r;
@@ -2248,7 +2587,6 @@ async function runSpin(){
   document.getElementById('btn-spin').disabled = true;
   winnerHighlights.clear();
 
-  const K = state.K;
   const allCandidates = getCandidates();
   if(allCandidates.length === 0){
     alert('当選候補がありません。項目を入力してください。');
@@ -2263,15 +2601,19 @@ async function runSpin(){
   if(state.complete){
     const remaining = allCandidates.filter(i => !state.completedSet.includes(i));
     if(remaining.length === 0){
-      // １巡完了 → ☆をクリアして新しい１巡を開始
+      // １巡完了 → 完了リストをクリアして新しい１巡を開始（盤面復活）
       state.completedSet = [];
       candidates = allCandidates;
     }else{
-      // 未当選があるうちはそこから選ぶ（☆は維持）
+      // 未当選があるうちはそこから選ぶ（盤面の枠は減ったまま）
       candidates = remaining;
     }
   }
   renderRoulette();
+
+  // 残り表示枚数に合わせてポインタ数Kをクランプ
+  const Nv = getRouletteVisibleIndices().length;
+  const K = Math.max(1, Math.min(state.K, Math.max(1, Nv)));
 
   // 上のポインタにランダム候補を合わせる（残りのポインタの先は固定オフセットで決まる）
   const target = candidates[Math.floor(Math.random() * candidates.length)];
@@ -2603,6 +2945,7 @@ function waitForRevealClose(){
 // 共通：モードに応じて回転 or 引く
 function runDrawOrSpin(){
   if(state.mode === 'fukubiki') return runDraw();
+  if(state.mode === 'card') return; // カードはタップ操作なのでメインボタン無効
   return runSpin();
 }
 document.getElementById('btn-spin').addEventListener('click', runDrawOrSpin);
@@ -2611,13 +2954,21 @@ document.getElementById('btn-spin').addEventListener('click', runDrawOrSpin);
 document.querySelectorAll('.mode-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const newMode = btn.dataset.mode;
-    if(newMode !== 'roulette' && newMode !== 'fukubiki') return;
+    if(newMode !== 'roulette' && newMode !== 'fukubiki' && newMode !== 'card') return;
     if(state.mode === newMode) return;
     state.mode = newMode;
     winnerHighlights.clear();
     renderAll();
   });
 });
+
+// シャッフルボタン
+const btnShuffle = document.getElementById('btn-shuffle');
+if(btnShuffle){
+  btnShuffle.addEventListener('click', ()=>{
+    if(state.mode === 'card') shuffleCards();
+  });
+}
 
 /* ============================================================
    当選演出
