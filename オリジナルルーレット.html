@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>オリジナルルーレット</title>
+<!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Mai&family=Yuji+Boku&display=swap" rel="stylesheet">
 <script src="xlsx.full.min.js"></script>
 <style>
   /* ===== カラーテーマ：既定（わくわく：ピンク） ===== */
@@ -423,6 +427,33 @@
     0%{transform:scale(0) rotate(20deg);opacity:0}
     70%{transform:scale(1.15) rotate(-5deg);opacity:1}
     100%{transform:scale(1) rotate(0)}
+  }
+  /* 紅白福引きモードの当選表示：ピンポン玉 */
+  .reveal-ball{
+    --ball-bg:#fb923c;
+    --ball-fg:#1f2937;
+    width:170px;height:170px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:10px;
+    font-size:28px;font-weight:900;line-height:1.15;
+    color:var(--ball-fg);
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 45%),
+      radial-gradient(circle at 65% 75%, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 55%),
+      var(--ball-bg);
+    box-shadow:
+      0 14px 32px rgba(0,0,0,0.35),
+      inset 0 -8px 14px rgba(0,0,0,0.18),
+      inset 0 6px 10px rgba(255,255,255,0.4);
+    border:2px solid rgba(60,20,0,0.35);
+    animation:ball-bounce 1s cubic-bezier(.5,1.6,.4,1) backwards;
+    word-break:break-word;overflow:hidden
+  }
+  @keyframes ball-bounce{
+    0%{transform:translateY(-160px) scale(0.6) rotate(-30deg);opacity:0}
+    55%{transform:translateY(20px) scale(1.12) rotate(8deg);opacity:1}
+    75%{transform:translateY(-12px) scale(0.96) rotate(-3deg)}
+    100%{transform:translateY(0) scale(1) rotate(0)}
   }
   .reveal-actions{
     display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;justify-content:center
@@ -1111,17 +1142,18 @@ function buildRouletteSVG(opts){
       ` paint-order="stroke" stroke="${stroke}" stroke-width="${(fs*0.08).toFixed(2)}" stroke-linejoin="round">${escapeXml(label)}</text>`
     );
 
-    // 当選マーク：☆を文字の「下」（中心寄り）に配置
-    // 今回スピン分も，重複なしモードで残す☆も，同じ☆で表示
+    // 当選マーク：★（塗りつぶし）を文字の「下」（中心寄り）に大きく配置
+    // 今回スピン分も，重複なしモードで残す★も，同じ★で表示
     if(winners.has(i) || completed.has(i)){
-      // 星のサイズは文字サイズに合わせて調整（分割数が多い時も見やすく）
-      const starSize = Math.max(5, fs * 0.7);
-      // 文字の内側端から少し離して配置
-      const mr = r - fs * 0.85 - starSize * 0.5;
+      // 星のサイズを大きく（文字サイズに合わせつつ最低でも目立つサイズ）
+      const starSize = Math.max(9, fs * 1.15);
+      // 文字の内側端から少し離して配置（大きいぶん中心寄りに）
+      const mr = r - fs * 0.95 - starSize * 0.55;
       const mx = cx + mr * Math.cos(aMid);
       const my = cy + mr * Math.sin(aMid);
       // 星は文字と同じ向きに回す（読み手から見て文字の下に出る）
-      parts.push(`<text x="0" y="0" transform="translate(${mx.toFixed(2)},${my.toFixed(2)}) rotate(${rotDeg.toFixed(2)})" text-anchor="middle" dominant-baseline="middle" font-size="${starSize.toFixed(1)}" fill="#facc15" stroke="#7c2d12" stroke-width="0.7" paint-order="stroke">☆</text>`);
+      // 塗りつぶし★ + 濃い縁取りで視認性UP，淡い影でグロウ感
+      parts.push(`<text x="0" y="0" transform="translate(${mx.toFixed(2)},${my.toFixed(2)}) rotate(${rotDeg.toFixed(2)})" text-anchor="middle" dominant-baseline="middle" font-size="${starSize.toFixed(1)}" fill="#fde047" stroke="#7c2d12" stroke-width="${(starSize*0.13).toFixed(2)}" paint-order="stroke" style="filter:drop-shadow(0 0 ${(starSize*0.18).toFixed(1)}px rgba(253,224,71,0.85))">★</text>`);
     }
   }
 
@@ -1313,14 +1345,17 @@ function buildFukubikiSVG(){
   const ballC = fukubikiBallColor();
   const textC = fukubikiTextColor();
 
-  const remaining = getRemainingBalls();
-  const ballR = fukubikiBallRadius(remaining.length);
-  const positions = packBalls(
+  // 重複あり（state.complete === false）の場合は，箱内のスケルトンボールを描かない
+  // 「あと何個残っているか」が成立しないモードなので，すっきり見せる
+  const showInsideBalls = !!state.complete;
+  const remaining = showInsideBalls ? getRemainingBalls() : [];
+  const ballR = fukubikiBallRadius(Math.max(1, remaining.length));
+  const positions = showInsideBalls ? packBalls(
     remaining.length,
     box.left + 8, box.right - 8,
     box.top + 6, box.bottom - 6,
     ballR
-  );
+  ) : [];
 
   const fontFam = escapeXml(getComputedStyle(document.body).fontFamily);
 
@@ -1376,14 +1411,32 @@ function buildFukubikiSVG(){
   }
   parts.push('</g>');
 
-  // ===== 福引の墨字（箱の手前面に書かれている雰囲気） =====
-  const charY = (box.top + box.bottom) / 2 + 14;
-  const charSize = Math.min((box.halfMid - box.left) * 0.78, (box.bottom - box.top) * 0.62);
-  const charFontFam = "'Yu Mincho','YuMincho','Hiragino Mincho ProN',serif";
-  // 福（黒，半透明気味で奥のボールがうっすら見える）
-  parts.push(`<text x="${(box.left + box.halfMid)/2}" y="${charY}" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.86" paint-order="stroke" stroke="rgba(0,0,0,0.5)" stroke-width="0.6">福</text>`);
-  // 引（黒，半透明気味）
-  parts.push(`<text x="${(box.halfMid + box.right)/2}" y="${charY}" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.86" paint-order="stroke" stroke="rgba(0,0,0,0.5)" stroke-width="0.6">引</text>`);
+  // ===== 福引の墨字（毛筆風・ダイナミック） =====
+  const charY = (box.top + box.bottom) / 2 + 18;
+  const charSize = Math.min((box.halfMid - box.left) * 0.92, (box.bottom - box.top) * 0.78);
+  const charFontFam = "'Yuji Mai','Yuji Boku','Yu Mincho','YuMincho','Hiragino Mincho ProN',serif";
+  // 墨だまり風シャドウ（下側に滲み）— SVGフィルタ
+  if(parts.findIndex(p=>p.includes('id="fb-ink-shadow"')) === -1){
+    // defs に追記したいが既に閉じているので別defsを後から重ねても問題なし
+    parts.push(`<defs>
+      <filter id="fb-ink-shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/>
+        <feOffset dx="0" dy="1.4" result="off"/>
+        <feComponentTransfer><feFuncA type="linear" slope="0.6"/></feComponentTransfer>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>`);
+  }
+  // 福（左半分・黒墨，少し左に傾けてダイナミックに）
+  const fukuCx = (box.left + box.halfMid)/2;
+  parts.push(`<g transform="translate(${fukuCx},${charY}) rotate(-5)" filter="url(#fb-ink-shadow)">
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.92" paint-order="stroke" stroke="#000" stroke-width="0.4">福</text>
+  </g>`);
+  // 引（右半分・白抜き墨字でテーマ色の上に映える，少し右に傾けて躍動感）
+  const hikiCx = (box.halfMid + box.right)/2;
+  parts.push(`<g transform="translate(${hikiCx},${charY}) rotate(4)" filter="url(#fb-ink-shadow)">
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.92" paint-order="stroke" stroke="#000" stroke-width="0.4">引</text>
+  </g>`);
 
   // ===== 上面（ふた）と穴 =====
   // 左半分のふた（奥行き感の台形）
@@ -1400,10 +1453,12 @@ function buildFukubikiSVG(){
   parts.push(`<ellipse cx="${holeLeftCx}" cy="${holeCy}" rx="34" ry="11" fill="none" stroke="#000" stroke-width="1.4" opacity="0.45" stroke-dasharray="2 3" />`);
   parts.push(`<ellipse cx="${holeRightCx}" cy="${holeCy}" rx="34" ry="11" fill="none" stroke="#000" stroke-width="1.4" opacity="0.45" stroke-dasharray="2 3" />`);
 
-  // 残個数表示（下部に小さく）
-  const totalActive = state.sections.reduce((s, sec)=> s + (sec && !sec.blank && (sec.label||'').trim() ? 1 : 0), 0);
-  const remainCount = remaining.length;
-  parts.push(`<text x="${VW/2}" y="${VH-6}" text-anchor="middle" font-size="11" fill="rgba(0,0,0,0.55)" font-family='${fontFam}'>残り ${remainCount} / ${totalActive}</text>`);
+  // 残個数表示（重複なしモードのみ。重複ありでは概念的に成り立たないので非表示）
+  if(showInsideBalls){
+    const totalActive = state.sections.reduce((s, sec)=> s + (sec && !sec.blank && (sec.label||'').trim() ? 1 : 0), 0);
+    const remainCount = remaining.length;
+    parts.push(`<text x="${VW/2}" y="${VH-6}" text-anchor="middle" font-size="11" fill="rgba(0,0,0,0.55)" font-family='${fontFam}'>残り ${remainCount} / ${totalActive}</text>`);
+  }
 
   parts.push('</svg>');
   return parts.join('');
@@ -2230,8 +2285,8 @@ function flyOutBalls(winners){
     winners.forEach((w, idx)=>{
       const sec = state.sections[w];
       const label = (sec && sec.label || '').trim() || `#${w+1}`;
-      const fromLeft = (idx % 2 === 0);
-      const sourceX = fromLeft ? holeLeftX : holeRightX;
+      // 当選ボールは必ず右（赤い箱）の穴から出てくる
+      const sourceX = holeRightX;
       const sourceY = holeY;
 
       // 飛び先：上方向に散らばらせる
@@ -2298,17 +2353,36 @@ const revealTitle = document.getElementById('reveal-title');
 function showReveal(winnerIndexes){
   revealList.innerHTML = '';
   revealTitle.textContent = winnerIndexes.length === 1 ? '🎉 当選！ 🎉' : `🎉 当選 ${winnerIndexes.length}つ 🎉`;
+  const isFuku = state.mode === 'fukubiki';
   for(let i=0;i<winnerIndexes.length;i++){
     const idx = winnerIndexes[i];
     const sec = state.sections[idx] || {};
-    const card = document.createElement('div');
-    card.className = 'reveal-card';
-    card.style.animationDelay = (0.15 * i + 0.2) + 's';
-    const fill = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, idx, state.N) : state.themeColor);
-    card.style.backgroundImage = `linear-gradient(${fill}cc,${fill}cc),linear-gradient(135deg,#ec4899,#fbbf24,#a855f7)`;
-    card.style.color = sec.textColor || state.textColor || '#000';
-    card.textContent = (sec.label||'').trim() || '（空白）';
-    revealList.appendChild(card);
+    const label = (sec.label||'').trim() || '（空白）';
+    if(isFuku){
+      // 紅白福引き：あたった項目をピンポン玉で表示
+      const ball = document.createElement('div');
+      ball.className = 'reveal-ball';
+      ball.style.animationDelay = (0.15 * i + 0.2) + 's';
+      const ballC = fukubikiBallColor();
+      const textC = sec.textColor || fukubikiTextColor();
+      ball.style.setProperty('--ball-bg', ballC);
+      ball.style.setProperty('--ball-fg', textC);
+      // 文字数で大きさ調整（長文は小さめ）
+      const len = Array.from(label).length;
+      const fs = len <= 4 ? 32 : len <= 8 ? 26 : len <= 14 ? 20 : 16;
+      ball.style.fontSize = fs + 'px';
+      ball.textContent = label;
+      revealList.appendChild(ball);
+    }else{
+      const card = document.createElement('div');
+      card.className = 'reveal-card';
+      card.style.animationDelay = (0.15 * i + 0.2) + 's';
+      const fill = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, idx, state.N) : state.themeColor);
+      card.style.backgroundImage = `linear-gradient(${fill}cc,${fill}cc),linear-gradient(135deg,#ec4899,#fbbf24,#a855f7)`;
+      card.style.color = sec.textColor || state.textColor || '#000';
+      card.textContent = label;
+      revealList.appendChild(card);
+    }
   }
   revealOverlay.classList.add('show');
   launchConfetti(80);
@@ -2322,7 +2396,7 @@ function hideReveal(){
 document.getElementById('btn-reveal-close').addEventListener('click', hideReveal);
 document.getElementById('btn-reveal-respin').addEventListener('click', ()=>{
   hideReveal();
-  setTimeout(()=>runSpin(), 200);
+  setTimeout(()=>runDrawOrSpin(), 200);
 });
 
 function launchConfetti(count){
