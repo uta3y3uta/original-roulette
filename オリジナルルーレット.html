@@ -539,7 +539,9 @@
   }
 
   /* 共有ビュー：編集UIを隠して大きく */
-  body.share-view .editor-panel{display:none}
+  body.share-view .editor-panel{display:none !important}
+  body.share-view #btn-finish,
+  body.share-view .btn-finish{display:none !important}
   body.share-view .layout{grid-template-columns:1fr}
   body.share-view .roulette-wrap{min-height:80vh}
   body.share-view .roulette-stage{max-width:680px}
@@ -1415,13 +1417,13 @@ function buildFukubikiSVG(){
   }
   parts.push('</g>');
 
-  // ===== 福引の墨字（毛筆風・ダイナミック） =====
-  const charY = (box.top + box.bottom) / 2 + 18;
-  const charSize = Math.min((box.halfMid - box.left) * 0.92, (box.bottom - box.top) * 0.78);
+  // ===== 福引の墨字（毛筆風・大きくまっすぐ） =====
+  const charY = (box.top + box.bottom) / 2 + 8;
+  // 半分の幅にほぼ目一杯収まるよう大きく
+  const charSize = Math.min((box.halfMid - box.left) * 1.10, (box.bottom - box.top) * 1.00);
   const charFontFam = "'Yuji Mai','Yuji Boku','Yu Mincho','YuMincho','Hiragino Mincho ProN',serif";
   // 墨だまり風シャドウ（下側に滲み）— SVGフィルタ
   if(parts.findIndex(p=>p.includes('id="fb-ink-shadow"')) === -1){
-    // defs に追記したいが既に閉じているので別defsを後から重ねても問題なし
     parts.push(`<defs>
       <filter id="fb-ink-shadow" x="-20%" y="-20%" width="140%" height="140%">
         <feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/>
@@ -1431,15 +1433,15 @@ function buildFukubikiSVG(){
       </filter>
     </defs>`);
   }
-  // 福（左半分・黒墨，少し左に傾けてダイナミックに）
+  // 福（左半分・黒墨・まっすぐ）
   const fukuCx = (box.left + box.halfMid)/2;
-  parts.push(`<g transform="translate(${fukuCx},${charY}) rotate(-5)" filter="url(#fb-ink-shadow)">
-    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.92" paint-order="stroke" stroke="#000" stroke-width="0.4">福</text>
+  parts.push(`<g transform="translate(${fukuCx},${charY})" filter="url(#fb-ink-shadow)">
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.94" paint-order="stroke" stroke="#000" stroke-width="0.5">福</text>
   </g>`);
-  // 引（右半分・白抜き墨字でテーマ色の上に映える，少し右に傾けて躍動感）
+  // 引（右半分・黒墨・まっすぐ）
   const hikiCx = (box.halfMid + box.right)/2;
-  parts.push(`<g transform="translate(${hikiCx},${charY}) rotate(4)" filter="url(#fb-ink-shadow)">
-    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.92" paint-order="stroke" stroke="#000" stroke-width="0.4">引</text>
+  parts.push(`<g transform="translate(${hikiCx},${charY})" filter="url(#fb-ink-shadow)">
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.94" paint-order="stroke" stroke="#000" stroke-width="0.5">引</text>
   </g>`);
 
   // ===== 上面（ふた）と穴 =====
@@ -2059,17 +2061,35 @@ function sectorAtPointer(rotation, p, K){
   return Math.floor(v / sectorWidth) % N;
 }
 
-// rotation でのK個ポインタすべての当選セクター（重複は時計回り側に詰める）
-function calcWinners(rotation, K){
+// rotation でのK個ポインタすべての当選セクター
+// excludedSet を渡すと「★済（重複なしモードの当選済）や空白」も時計回りにスキップする
+// 同一スピン内で K個が重複しないことを最優先（"used"を絶対に避け，excludedはできる限り避ける）
+function calcWinners(rotation, K, excludedSet){
   const N = state.N;
+  const excluded = excludedSet instanceof Set ? excludedSet : new Set();
   const raw = [];
   for(let p=0;p<K;p++) raw.push(sectorAtPointer(rotation, p, K));
   const used = new Set();
   const final = [];
   for(const w of raw){
     let idx = w, tries = 0;
-    while(used.has(idx) && tries < N){ idx = (idx + 1) % N; tries++; }
-    used.add(idx); final.push(idx);
+    // 1st pass: usedも excluded も避ける（１巡内重複も★済重複も両方回避）
+    while((used.has(idx) || excluded.has(idx)) && tries < N){
+      idx = (idx + 1) % N;
+      tries++;
+    }
+    // 全周しても見つからなかった = 残りはみんな used or excluded
+    // → used だけは絶対回避，excludedは諦めてOK（１巡終盤の救済）
+    if(used.has(idx) || excluded.has(idx)){
+      idx = w;
+      let t2 = 0;
+      while(used.has(idx) && t2 < N){
+        idx = (idx + 1) % N;
+        t2++;
+      }
+    }
+    used.add(idx);
+    final.push(idx);
   }
   return final;
 }
@@ -2165,8 +2185,18 @@ async function runSpin(){
   await spinAnimate(targetRot, SPIN_DURATION);
   status.textContent = '';
 
-  // 当選計算：K個ポインタすべての先のセクター（重複は時計回りで回避）
-  let winners = calcWinners(state.rotation, K);
+  // 当選計算：K個ポインタすべての先のセクター
+  // 「空白セクター」と「重複なしモードの★済」を時計回りでスキップして
+  // できる限り未当選の項目から選ぶ（１巡終盤までは重複しないように）
+  const excludedForCalc = new Set();
+  for(let i=0;i<state.N;i++){
+    const sec = state.sections[i];
+    if(!sec || sec.blank || !((sec.label||'').trim())) excludedForCalc.add(i);
+  }
+  if(state.complete){
+    for(const c of state.completedSet) excludedForCalc.add(c);
+  }
+  let winners = calcWinners(state.rotation, K, excludedForCalc);
   // 候補外（空白）しか当たっていない場合の救済
   const validCount = winners.filter(i => candidates.includes(i)).length;
   if(validCount === 0){
