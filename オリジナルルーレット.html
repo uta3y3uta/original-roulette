@@ -454,11 +454,61 @@
     50%{transform:scale(1.3);opacity:1}
   }
 
+  /* ===== モード切替（ルーレット/紅白福引き） ===== */
+  .mode-toggle{
+    display:flex;gap:6px;justify-content:center;margin-bottom:10px;
+    background:var(--panel-soft);border:1px solid var(--border-soft);
+    border-radius:999px;padding:4px;width:fit-content;margin-left:auto;margin-right:auto
+  }
+  .mode-btn{
+    padding:6px 16px;border-radius:999px;border:none;
+    background:transparent;cursor:pointer;font-weight:700;font-size:13px;
+    color:var(--muted);font-family:inherit;transition:all .15s ease
+  }
+  .mode-btn:hover{color:var(--text)}
+  .mode-btn.active{
+    background:var(--accent);color:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.18)
+  }
+
+  /* ===== 紅白福引きBOX ===== */
+  .fukubiki-stage{
+    position:relative;width:100%;max-width:560px;aspect-ratio:5/4;
+    display:flex;align-items:center;justify-content:center;
+    transform-origin:center bottom
+  }
+  .fukubiki-stage svg{width:100%;height:100%;display:block;
+    filter:drop-shadow(0 8px 22px rgba(0,0,0,0.18))}
+  .fukubiki-stage.shaking{animation:fukubiki-shake 0.18s ease-in-out infinite}
+  @keyframes fukubiki-shake{
+    0%,100%{transform:translate(0,0) rotate(0deg)}
+    20%{transform:translate(-5px,2px) rotate(-1.6deg)}
+    40%{transform:translate(5px,-2px) rotate(1.6deg)}
+    60%{transform:translate(-4px,1px) rotate(-1.2deg)}
+    80%{transform:translate(4px,-1px) rotate(1.2deg)}
+  }
+  .fukubiki-flying-balls{
+    position:absolute;inset:0;pointer-events:none;z-index:8;overflow:visible
+  }
+  .fb-fly{
+    position:absolute;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;font-weight:900;
+    box-shadow:0 6px 14px rgba(0,0,0,0.35), inset -4px -5px 8px rgba(0,0,0,0.18), inset 3px 3px 6px rgba(255,255,255,0.55);
+    animation:fb-fly-out 1.0s cubic-bezier(0.22, 1.1, 0.36, 1) forwards
+  }
+  @keyframes fb-fly-out{
+    0%  {transform:translate(0,0) scale(0.55) rotate(0deg);opacity:0}
+    15% {transform:translate(0,-30px) scale(0.9) rotate(40deg);opacity:1}
+    55% {transform:translate(var(--fb-mx),var(--fb-my)) scale(1.15) rotate(220deg);opacity:1}
+    100%{transform:translate(var(--fb-tx),var(--fb-ty)) scale(1.4) rotate(540deg);opacity:0}
+  }
+
   /* 共有ビュー：編集UIを隠して大きく */
   body.share-view .editor-panel{display:none}
   body.share-view .layout{grid-template-columns:1fr}
   body.share-view .roulette-wrap{min-height:80vh}
   body.share-view .roulette-stage{max-width:680px}
+  body.share-view .fukubiki-stage{max-width:720px}
   .share-banner{display:none;
     background:linear-gradient(90deg,#fef3c7,#fde68a);
     border:1px solid #fbbf24;color:#78350f;
@@ -481,7 +531,7 @@
 <body>
 <h1><span class="emoji">🎯</span>オリジナルルーレット</h1>
 
-<p class="share-banner">🔗 共有されたルーレットを表示しています。「回転」を押して回してみてください。</p>
+<p class="share-banner" id="share-banner">🔗 共有版を表示しています。ボタンを押して結果を見てみてください。</p>
 
 <div class="layout">
   <!-- ===== 左：設定パネル ===== -->
@@ -554,11 +604,17 @@
     <div class="section-list" id="section-list"></div>
   </div>
 
-  <!-- ===== 右：ルーレットプレビュー ===== -->
+  <!-- ===== 右：プレビュー ===== -->
   <div class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <strong>ルーレット</strong>
+      <strong id="preview-title">ルーレット</strong>
       <span class="hint" id="preview-info"></span>
+    </div>
+
+    <!-- モード切替 -->
+    <div class="mode-toggle editor-panel" role="tablist">
+      <button class="mode-btn active" data-mode="roulette" type="button">🎡 ルーレット</button>
+      <button class="mode-btn" data-mode="fukubiki" type="button">🎁 紅白福引き</button>
     </div>
 
     <div class="roulette-wrap">
@@ -566,6 +622,10 @@
         <div class="roulette-disc" id="roulette-disc"></div>
         <div class="roulette-pointers" id="roulette-pointers"></div>
         <div class="roulette-center"></div>
+      </div>
+
+      <div class="fukubiki-stage" id="fukubiki-stage" style="display:none">
+        <div class="fukubiki-flying-balls" id="fukubiki-flying"></div>
       </div>
 
       <div class="roulette-controls">
@@ -724,6 +784,7 @@ function defaultLabels(n){
 
 const state = loadState() || {
   uiTheme: 'pastel',
+  mode: 'roulette',
   N: 8,
   K: 1,
   complete: true,
@@ -740,6 +801,7 @@ ensureStateIntegrity(state);
 
 function ensureStateIntegrity(s){
   if(typeof s.uiTheme !== 'string') s.uiTheme = 'pastel';
+  if(s.mode !== 'roulette' && s.mode !== 'fukubiki') s.mode = 'roulette';
   if(typeof s.N !== 'number') s.N = 8;
   if(typeof s.K !== 'number') s.K = 1;
   if(typeof s.complete !== 'boolean') s.complete = true;
@@ -1111,6 +1173,8 @@ function renderAll(){
   renderSectionList();
   updateBulkBlankCheckbox();
   renderRoulette();
+  renderFukubiki();
+  applyModeToUI();
   saveState();
 }
 
@@ -1152,6 +1216,224 @@ function renderRoulette(){
 function applyRotationToPreview(){
   const disc = document.getElementById('roulette-disc');
   if(disc) disc.style.transform = `rotate(${state.rotation || 0}deg)`;
+}
+
+/* ============================================================
+   紅白福引きBOX 描画
+   ============================================================ */
+// 紅白福引きモードでの「赤」「オレンジ」のフォールバック既定値。
+// ユーザーが既定（ピンク／白）のままの場合は，箱モードでは
+// クラシックな赤＋オレンジに見えるよう自動で差し替える。
+const FUKUBIKI_RED_DEFAULT    = '#dc2626';
+const FUKUBIKI_ORANGE_DEFAULT = '#fb923c';
+
+function fukubikiThemeColor(){
+  return (state.themeColor === DEFAULT_THEME) ? FUKUBIKI_RED_DEFAULT : (state.themeColor || FUKUBIKI_RED_DEFAULT);
+}
+function fukubikiBallColor(){
+  return (state.strokeColor === DEFAULT_STROKE) ? FUKUBIKI_ORANGE_DEFAULT : (state.strokeColor || FUKUBIKI_ORANGE_DEFAULT);
+}
+function fukubikiTextColor(){
+  return state.textColor || '#1f2937';
+}
+
+// 残っているピンポン玉（重複なしモード時は当選済を除外）を返す
+function getRemainingBalls(){
+  const completed = state.complete ? new Set(state.completedSet) : new Set();
+  const out = [];
+  for(let i=0;i<state.N;i++){
+    const sec = state.sections[i];
+    if(!sec || sec.blank) continue;
+    const label = (sec.label||'').trim();
+    if(!label) continue;
+    if(completed.has(i)) continue;
+    out.push({idx: i, label});
+  }
+  return out;
+}
+
+// ボール最大数N目安に応じてサイズを決める
+function fukubikiBallRadius(remainingCount){
+  // 多いほど小さく，少ないほど大きく。残数ベースで動的に
+  const n = Math.max(1, remainingCount);
+  return Math.max(11, Math.min(26, 78 / Math.sqrt(n)));
+}
+
+// 矩形領域内に円をなるべく自然に積み上げる（六角形パッキング風）
+function packBalls(n, left, right, top, bottom, r){
+  const positions = [];
+  if(n <= 0) return positions;
+  const stepX = r * 2 + 1;
+  const stepY = r * 1.78;
+  const cols = Math.max(1, Math.floor((right - left) / stepX));
+  let row = 0;
+  while(positions.length < n){
+    const y = bottom - row * stepY - r;
+    if(y - r < top - 4) break; // あふれ
+    const offset = (row % 2 === 0) ? 0 : (stepX / 2);
+    const colsHere = (row % 2 === 0) ? cols : Math.max(1, cols - 1);
+    const baseX = left + r + offset;
+    for(let c=0; c<colsHere && positions.length<n; c++){
+      const x = baseX + c * stepX;
+      // 自然さのため微小ジッター（決定的）
+      const jitter = ((c * 7 + row * 13) % 5 - 2) * 0.3;
+      positions.push({x: x + jitter, y: y + jitter*0.6});
+    }
+    row++;
+  }
+  return positions;
+}
+
+// ボールの中に表示する文字（ボールサイズに合わせて省略）
+function ballDisplayLabel(label, r){
+  const chars = Array.from(label);
+  // 半径に応じて表示できる文字数の目安
+  const max = Math.max(2, Math.floor(r / 4.2));
+  if(chars.length <= max) return label;
+  return chars.slice(0, Math.max(1, max-1)).join('') + '…';
+}
+
+// ボックス内座標系（VBOXは buildFukubikiSVG と一致させる）
+const FUKUBIKI_VBOX_W = 460;
+const FUKUBIKI_VBOX_H = 360;
+
+function fukubikiBoxRect(){
+  return {
+    left: 32, right: 428,
+    top: 80,  bottom: 332,
+    halfMid: 230,
+    holeY: 70  // 上面の穴のy
+  };
+}
+
+function buildFukubikiSVG(){
+  const VW = FUKUBIKI_VBOX_W, VH = FUKUBIKI_VBOX_H;
+  const box = fukubikiBoxRect();
+  const themeC = fukubikiThemeColor();
+  const ballC = fukubikiBallColor();
+  const textC = fukubikiTextColor();
+
+  const remaining = getRemainingBalls();
+  const ballR = fukubikiBallRadius(remaining.length);
+  const positions = packBalls(
+    remaining.length,
+    box.left + 8, box.right - 8,
+    box.top + 6, box.bottom - 6,
+    ballR
+  );
+
+  const fontFam = escapeXml(getComputedStyle(document.body).fontFamily);
+
+  const parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="100%">`);
+
+  // ===== Defs（グラデーション） =====
+  parts.push(`<defs>
+    <radialGradient id="fb-ball-grad" cx="35%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.85)"/>
+      <stop offset="40%" stop-color="rgba(255,255,255,0.0)"/>
+    </radialGradient>
+    <linearGradient id="fb-white-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.78"/>
+      <stop offset="100%" stop-color="#f3f4f6" stop-opacity="0.55"/>
+    </linearGradient>
+    <linearGradient id="fb-theme-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${themeC}" stop-opacity="0.78"/>
+      <stop offset="100%" stop-color="${themeC}" stop-opacity="0.50"/>
+    </linearGradient>
+    <linearGradient id="fb-shadow-side" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.2)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>`);
+
+  // 床の影
+  parts.push(`<ellipse cx="${VW/2}" cy="${box.bottom + 14}" rx="${(box.right-box.left)/2 - 5}" ry="9" fill="rgba(0,0,0,0.22)" />`);
+
+  // ===== 箱の本体（半透明＝スケルトン） =====
+  // 左半分（白）
+  parts.push(`<rect x="${box.left}" y="${box.top}" width="${box.halfMid - box.left}" height="${box.bottom - box.top}" fill="url(#fb-white-grad)" stroke="#1f1f1f" stroke-width="2.4" />`);
+  // 右半分（テーマ色）
+  parts.push(`<rect x="${box.halfMid}" y="${box.top}" width="${box.right - box.halfMid}" height="${box.bottom - box.top}" fill="url(#fb-theme-grad)" stroke="#1f1f1f" stroke-width="2.4" />`);
+  // 内側のうっすら陰影（左右の境界の奥行き感）
+  parts.push(`<rect x="${box.halfMid - 6}" y="${box.top + 2}" width="12" height="${box.bottom - box.top - 4}" fill="url(#fb-shadow-side)" opacity="0.25" />`);
+
+  // ===== ボール（箱の手前ガラス越しに見える） =====
+  parts.push('<g class="balls-inside">');
+  for(let k=0; k<remaining.length; k++){
+    const item = remaining[k];
+    const pos = positions[k];
+    if(!pos) continue;
+    // ボール本体
+    parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="${ballC}" stroke="rgba(60,20,0,0.45)" stroke-width="0.7" opacity="0.94" />`);
+    // ハイライト（つや）
+    parts.push(`<circle cx="${pos.x.toFixed(2)}" cy="${pos.y.toFixed(2)}" r="${ballR.toFixed(2)}" fill="url(#fb-ball-grad)" pointer-events="none" />`);
+    // 文字
+    const display = ballDisplayLabel(item.label, ballR);
+    const charCount = Array.from(display).length;
+    const fs = Math.max(6, Math.min(ballR * 0.95, ballR * 1.6 / Math.max(1, charCount)));
+    parts.push(`<text x="${pos.x.toFixed(2)}" y="${(pos.y+0.5).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${fs.toFixed(2)}" font-weight="800" fill="${textC}" font-family='${fontFam}' paint-order="stroke" stroke="rgba(255,255,255,0.55)" stroke-width="${(fs*0.06).toFixed(2)}">${escapeXml(display)}</text>`);
+  }
+  parts.push('</g>');
+
+  // ===== 福引の墨字（箱の手前面に書かれている雰囲気） =====
+  const charY = (box.top + box.bottom) / 2 + 14;
+  const charSize = Math.min((box.halfMid - box.left) * 0.78, (box.bottom - box.top) * 0.62);
+  const charFontFam = "'Yu Mincho','YuMincho','Hiragino Mincho ProN',serif";
+  // 福（黒，半透明気味で奥のボールがうっすら見える）
+  parts.push(`<text x="${(box.left + box.halfMid)/2}" y="${charY}" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.86" paint-order="stroke" stroke="rgba(0,0,0,0.5)" stroke-width="0.6">福</text>`);
+  // 引（黒，半透明気味）
+  parts.push(`<text x="${(box.halfMid + box.right)/2}" y="${charY}" text-anchor="middle" dominant-baseline="middle" font-size="${charSize.toFixed(1)}" font-weight="900" font-family="${charFontFam}" fill="#0a0a0a" opacity="0.86" paint-order="stroke" stroke="rgba(0,0,0,0.5)" stroke-width="0.6">引</text>`);
+
+  // ===== 上面（ふた）と穴 =====
+  // 左半分のふた（奥行き感の台形）
+  parts.push(`<path d="M ${box.left} ${box.top} L ${box.left + 16} ${box.holeY} L ${box.halfMid + 16} ${box.holeY} L ${box.halfMid} ${box.top} Z" fill="#fafafa" stroke="#1f1f1f" stroke-width="2.2" stroke-linejoin="round" />`);
+  // 右半分のふた
+  parts.push(`<path d="M ${box.halfMid} ${box.top} L ${box.halfMid + 16} ${box.holeY} L ${box.right + 16} ${box.holeY} L ${box.right} ${box.top} Z" fill="${themeC}" stroke="#1f1f1f" stroke-width="2.2" stroke-linejoin="round" />`);
+  // 穴（上から見た楕円，左右）
+  const holeLeftCx = (box.left + box.halfMid) / 2 + 8;
+  const holeRightCx = (box.halfMid + box.right) / 2 + 8;
+  const holeCy = (box.top + box.holeY) / 2;
+  parts.push(`<ellipse cx="${holeLeftCx}" cy="${holeCy}" rx="26" ry="7" fill="#0d0d0d" stroke="#000" stroke-width="1.5" />`);
+  parts.push(`<ellipse cx="${holeRightCx}" cy="${holeCy}" rx="26" ry="7" fill="#0d0d0d" stroke="#000" stroke-width="1.5" />`);
+  // 穴の周りの「使い込み」ハッチ的な黒い縁（リアル感）
+  parts.push(`<ellipse cx="${holeLeftCx}" cy="${holeCy}" rx="34" ry="11" fill="none" stroke="#000" stroke-width="1.4" opacity="0.45" stroke-dasharray="2 3" />`);
+  parts.push(`<ellipse cx="${holeRightCx}" cy="${holeCy}" rx="34" ry="11" fill="none" stroke="#000" stroke-width="1.4" opacity="0.45" stroke-dasharray="2 3" />`);
+
+  // 残個数表示（下部に小さく）
+  const totalActive = state.sections.reduce((s, sec)=> s + (sec && !sec.blank && (sec.label||'').trim() ? 1 : 0), 0);
+  const remainCount = remaining.length;
+  parts.push(`<text x="${VW/2}" y="${VH-6}" text-anchor="middle" font-size="11" fill="rgba(0,0,0,0.55)" font-family='${fontFam}'>残り ${remainCount} / ${totalActive}</text>`);
+
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+function renderFukubiki(){
+  const stage = document.getElementById('fukubiki-stage');
+  if(!stage) return;
+  // 既存の飛び出しレイヤを残し，箱SVGだけ差し替え
+  let svgWrap = stage.querySelector('.fb-svg-wrap');
+  if(!svgWrap){
+    svgWrap = document.createElement('div');
+    svgWrap.className = 'fb-svg-wrap';
+    svgWrap.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center';
+    stage.insertBefore(svgWrap, stage.firstChild);
+  }
+  svgWrap.innerHTML = buildFukubikiSVG();
+}
+
+function applyModeToUI(){
+  const isFuku = state.mode === 'fukubiki';
+  document.getElementById('roulette-stage').style.display = isFuku ? 'none' : '';
+  document.getElementById('fukubiki-stage').style.display = isFuku ? '' : 'none';
+  document.getElementById('preview-title').textContent = isFuku ? '紅白福引きBOX' : 'ルーレット';
+  const btn = document.getElementById('btn-spin');
+  if(btn) btn.textContent = isFuku ? '🎁 引く' : '🎡 回転';
+  // モード切替ボタンのactive状態
+  document.querySelectorAll('.mode-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode === state.mode);
+  });
 }
 
 function renderSectionList(){
@@ -1851,7 +2133,160 @@ async function runSpin(){
   document.getElementById('btn-spin').disabled = false;
   saveState();
 }
-document.getElementById('btn-spin').addEventListener('click', runSpin);
+/* ============================================================
+   紅白福引きBOX：引く処理
+   ============================================================ */
+async function runDraw(){
+  if(spinning) return;
+  spinning = true;
+  document.getElementById('btn-spin').disabled = true;
+  winnerHighlights.clear();
+
+  const K = state.K;
+  const allCandidates = getCandidates();
+  if(allCandidates.length === 0){
+    alert('当選候補がありません。項目を入力してください。');
+    spinning = false;
+    document.getElementById('btn-spin').disabled = false;
+    return;
+  }
+
+  // 重複なしモード：完了済を除外。１巡完了なら☆をクリア。
+  let candidates = allCandidates;
+  if(state.complete){
+    const remaining = allCandidates.filter(i => !state.completedSet.includes(i));
+    if(remaining.length === 0){
+      state.completedSet = [];
+      candidates = allCandidates;
+    }else{
+      candidates = remaining;
+    }
+  }
+
+  // K個の当選を抽選（１回のスピン内では重複しないが，candidates < K なら全候補から補充）
+  const winners = [];
+  let pool = [...candidates];
+  for(let k=0; k<K; k++){
+    if(pool.length === 0) pool = [...allCandidates];
+    const j = Math.floor(Math.random() * pool.length);
+    winners.push(pool[j]);
+    pool.splice(j, 1);
+  }
+
+  // 演出：箱を揺らす → ボールが飛び出す
+  const stage = document.getElementById('fukubiki-stage');
+  const status = document.getElementById('spin-status');
+  status.textContent = '🎁 引いています…';
+
+  // シェイク開始
+  stage.classList.add('shaking');
+  await new Promise(r=> setTimeout(r, 700));
+  stage.classList.remove('shaking');
+
+  // ボール飛び出しアニメーション
+  await flyOutBalls(winners);
+
+  status.textContent = '';
+
+  // 当選を反映
+  for(const w of winners) winnerHighlights.add(w);
+  if(state.complete){
+    for(const w of winners){
+      const sec = state.sections[w];
+      if(sec && !sec.blank && (sec.label||'').trim() && !state.completedSet.includes(w)){
+        state.completedSet.push(w);
+      }
+    }
+  }
+
+  renderFukubiki();
+  showReveal(winners);
+
+  spinning = false;
+  document.getElementById('btn-spin').disabled = false;
+  saveState();
+}
+
+// 当選ボールを箱の穴から飛び出させるDOMアニメーション
+function flyOutBalls(winners){
+  return new Promise(resolve=>{
+    const stage = document.getElementById('fukubiki-stage');
+    const flyLayer = document.getElementById('fukubiki-flying');
+    if(!stage || !flyLayer){ resolve(); return; }
+    // SVGビューボックス座標 → ピクセル座標 への変換
+    const rect = stage.getBoundingClientRect();
+    const sx = rect.width / FUKUBIKI_VBOX_W;
+    const sy = rect.height / FUKUBIKI_VBOX_H;
+    const box = fukubikiBoxRect();
+    const holeLeftX  = ((box.left + box.halfMid) / 2 + 8) * sx;
+    const holeRightX = ((box.halfMid + box.right) / 2 + 8) * sx;
+    const holeY = ((box.top + box.holeY) / 2) * sy;
+
+    const ballC = fukubikiBallColor();
+    const textC = fukubikiTextColor();
+    const ballPx = Math.max(36, Math.min(64, rect.width * 0.10));
+
+    const elems = [];
+    winners.forEach((w, idx)=>{
+      const sec = state.sections[w];
+      const label = (sec && sec.label || '').trim() || `#${w+1}`;
+      const fromLeft = (idx % 2 === 0);
+      const sourceX = fromLeft ? holeLeftX : holeRightX;
+      const sourceY = holeY;
+
+      // 飛び先：上方向に散らばらせる
+      const spread = (idx - (winners.length-1)/2);
+      const midX = sourceX + spread * 28;
+      const midY = sourceY - 90;
+      const targetX = sourceX + spread * 70 + (Math.random()*40-20);
+      const targetY = sourceY - 220 - Math.random()*40;
+
+      const el = document.createElement('div');
+      el.className = 'fb-fly';
+      el.style.cssText = `
+        left:${(sourceX - ballPx/2).toFixed(1)}px;
+        top:${(sourceY - ballPx/2).toFixed(1)}px;
+        width:${ballPx}px;height:${ballPx}px;
+        font-size:${(ballPx*0.32).toFixed(1)}px;
+        background:radial-gradient(circle at 32% 30%, #fff8 0%, transparent 50%), ${ballC};
+        color:${textC};
+        --fb-mx:${(midX-sourceX).toFixed(1)}px;
+        --fb-my:${(midY-sourceY).toFixed(1)}px;
+        --fb-tx:${(targetX-sourceX).toFixed(1)}px;
+        --fb-ty:${(targetY-sourceY).toFixed(1)}px;
+        animation-delay:${(idx*0.12).toFixed(2)}s;
+      `;
+      el.textContent = ballDisplayLabel(label, 16);
+      flyLayer.appendChild(el);
+      elems.push(el);
+    });
+
+    const totalDuration = 1000 + winners.length * 120;
+    setTimeout(()=>{
+      elems.forEach(e => e.remove());
+      resolve();
+    }, totalDuration);
+  });
+}
+
+// 共通：モードに応じて回転 or 引く
+function runDrawOrSpin(){
+  if(state.mode === 'fukubiki') return runDraw();
+  return runSpin();
+}
+document.getElementById('btn-spin').addEventListener('click', runDrawOrSpin);
+
+// モード切替ボタン
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const newMode = btn.dataset.mode;
+    if(newMode !== 'roulette' && newMode !== 'fukubiki') return;
+    if(state.mode === newMode) return;
+    state.mode = newMode;
+    winnerHighlights.clear();
+    renderAll();
+  });
+});
 
 /* ============================================================
    当選演出
