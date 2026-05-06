@@ -1,0 +1,2041 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>オリジナルルーレット</title>
+<script src="xlsx.full.min.js"></script>
+<style>
+  /* ===== カラーテーマ：既定（わくわく：ピンク） ===== */
+  :root, body[data-theme="wakuwaku"]{
+    --bg:#fff5f9;
+    --panel:#ffffff;
+    --panel-soft:#fff0f7;
+    --border:#fbcfe8;
+    --border-soft:#fce7f3;
+    --text:#831843;
+    --muted:#9d174d;
+    --accent:#ec4899;
+    --accent-hover:#db2777;
+    --accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#ec4899 0%,#a855f7 50%,#3b82f6 100%);
+    --header-fg:#ffffff;
+    --common-bg:#fdf2f8;
+    --common-border:#fbcfe8;
+    --common-fg:#9d174d;
+    --pointer-color:#ef4444;
+    --pointer-stroke:#7f1d1d;
+    --stage-bg:radial-gradient(circle at 50% 30%,#fff8fb 0%,#fce7f3 100%);
+    --shadow:0 2px 8px rgba(236,72,153,0.10);
+    --shadow-strong:0 8px 28px rgba(236,72,153,0.20);
+    --radius:14px;
+    --radius-sm:10px;
+    --ui-font:"HGMaruGothicMPRO","Hiragino Maru Gothic ProN","Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    --header-pad:14px 18px;
+    --header-size:20px;
+  }
+
+  /* ===== シンプル（白＆青） ===== */
+  body[data-theme="simple"]{
+    --bg:#f5f5f5;--panel:#ffffff;--panel-soft:#fafafa;
+    --border:#d4d4d8;--border-soft:#e5e7eb;
+    --text:#111827;--muted:#6b7280;
+    --accent:#3b82f6;--accent-hover:#2563eb;--accent-fg:#ffffff;
+    --header-bg:#1f2937;--header-fg:#ffffff;
+    --common-bg:#eff6ff;--common-border:#bfdbfe;--common-fg:#1e3a8a;
+    --pointer-color:#ef4444;--pointer-stroke:#7f1d1d;
+    --stage-bg:linear-gradient(180deg,#fafafa,#e5e7eb);
+    --shadow:0 1px 2px rgba(0,0,0,0.04);
+    --shadow-strong:0 6px 20px rgba(0,0,0,0.08);
+    --radius:8px;--radius-sm:5px;
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+  }
+
+  /* ===== ナチュラル（ベージュ＆深緑） ===== */
+  body[data-theme="natural"]{
+    --bg:#f7f1e3;--panel:#fdfaf2;--panel-soft:#f1ead8;
+    --border:#caa779;--border-soft:#e0d4b6;
+    --text:#3d2817;--muted:#7a6850;
+    --accent:#4a7c59;--accent-hover:#36603f;--accent-fg:#ffffff;
+    --header-bg:#3d2817;--header-fg:#f7f1e3;
+    --common-bg:#efe7d2;--common-border:#caa779;--common-fg:#3d2817;
+    --pointer-color:#a13b1d;--pointer-stroke:#5a1f0e;
+    --stage-bg:radial-gradient(circle at 50% 30%,#fdfaf2 0%,#ede2c8 100%);
+    --radius:14px;--radius-sm:8px;
+    --shadow:0 2px 4px rgba(60,40,20,0.08);
+    --shadow-strong:0 6px 18px rgba(60,40,20,0.12);
+    --ui-font:"Hiragino Mincho ProN","Yu Mincho",serif;
+  }
+
+  /* ===== ポップ（クリーム＆コーラル） ===== */
+  body[data-theme="pop"]{
+    --bg:#fff8ee;--panel:#ffffff;--panel-soft:#fff1de;
+    --border:#fcc89e;--border-soft:#ffe2c7;
+    --text:#5b2c0a;--muted:#9a6b48;
+    --accent:#ff7a3d;--accent-hover:#ed5a1c;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#ff8a4c,#ffb347);--header-fg:#ffffff;
+    --common-bg:#fff3e0;--common-border:#fcc89e;--common-fg:#a64a17;
+    --pointer-color:#dc2626;--pointer-stroke:#7f1d1d;
+    --stage-bg:radial-gradient(circle at 50% 30%,#fff8ee 0%,#fde2bd 100%);
+    --radius:18px;--radius-sm:10px;
+    --shadow:0 2px 6px rgba(255,122,61,0.10);
+    --shadow-strong:0 8px 24px rgba(255,122,61,0.18);
+  }
+
+  /* ===== モダン（白黒＆ティール） ===== */
+  body[data-theme="modern"]{
+    --bg:#fafafa;--panel:#ffffff;--panel-soft:#f4f4f5;
+    --border:#d4d4d8;--border-soft:#e4e4e7;
+    --text:#0a0a0a;--muted:#71717a;
+    --accent:#14b8a6;--accent-hover:#0d9488;--accent-fg:#ffffff;
+    --header-bg:#0a0a0a;--header-fg:#5eead4;
+    --common-bg:#f0fdfa;--common-border:#99f6e4;--common-fg:#115e59;
+    --pointer-color:#0a0a0a;--pointer-stroke:#5eead4;
+    --stage-bg:linear-gradient(180deg,#fafafa,#e4e4e7);
+    --radius:6px;--radius-sm:3px;
+    --shadow:0 1px 2px rgba(0,0,0,0.06);
+    --shadow-strong:0 10px 30px rgba(0,0,0,0.10);
+    --ui-font:"Inter","Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  /* ===== オーシャン（青＆水色） ===== */
+  body[data-theme="ocean"]{
+    --bg:#ecfeff;--panel:#ffffff;--panel-soft:#cffafe;
+    --border:#67e8f9;--border-soft:#a5f3fc;
+    --text:#083344;--muted:#0e7490;
+    --accent:#0891b2;--accent-hover:#0e7490;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#0891b2,#1e40af);--header-fg:#ffffff;
+    --common-bg:#cffafe;--common-border:#67e8f9;--common-fg:#155e75;
+    --pointer-color:#fb923c;--pointer-stroke:#9a3412;
+    --stage-bg:radial-gradient(circle at 50% 30%,#ecfeff 0%,#a5f3fc 100%);
+    --radius:14px;--radius-sm:10px;
+    --shadow:0 2px 8px rgba(8,145,178,0.10);
+    --shadow-strong:0 8px 28px rgba(8,145,178,0.20);
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  /* ===== フォレスト（緑＆木） ===== */
+  body[data-theme="forest"]{
+    --bg:#f0fdf4;--panel:#ffffff;--panel-soft:#dcfce7;
+    --border:#86efac;--border-soft:#bbf7d0;
+    --text:#14532d;--muted:#166534;
+    --accent:#16a34a;--accent-hover:#15803d;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#15803d,#365314);--header-fg:#f0fdf4;
+    --common-bg:#dcfce7;--common-border:#86efac;--common-fg:#14532d;
+    --pointer-color:#dc2626;--pointer-stroke:#7f1d1d;
+    --stage-bg:radial-gradient(circle at 50% 30%,#f0fdf4 0%,#bbf7d0 100%);
+    --radius:14px;--radius-sm:10px;
+    --shadow:0 2px 8px rgba(22,163,74,0.10);
+    --shadow-strong:0 8px 28px rgba(22,163,74,0.20);
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  /* ===== サンセット（夕焼け） ===== */
+  body[data-theme="sunset"]{
+    --bg:#fff7ed;--panel:#fffbf5;--panel-soft:#fed7aa;
+    --border:#fb923c;--border-soft:#fdba74;
+    --text:#7c2d12;--muted:#9a3412;
+    --accent:#f97316;--accent-hover:#ea580c;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#f97316 0%,#db2777 50%,#7c3aed 100%);--header-fg:#ffffff;
+    --common-bg:#ffedd5;--common-border:#fdba74;--common-fg:#9a3412;
+    --pointer-color:#7c3aed;--pointer-stroke:#4c1d95;
+    --stage-bg:radial-gradient(circle at 50% 30%,#fff7ed 0%,#fed7aa 60%,#fbcfe8 100%);
+    --radius:16px;--radius-sm:10px;
+    --shadow:0 2px 8px rgba(249,115,22,0.15);
+    --shadow-strong:0 8px 28px rgba(249,115,22,0.25);
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  /* ===== ネオン（暗色＆蛍光） ===== */
+  body[data-theme="neon"]{
+    --bg:#0f0a1f;--panel:#1a132e;--panel-soft:#241a40;
+    --border:#7c3aed;--border-soft:#5b21b6;
+    --text:#f5d0fe;--muted:#c4b5fd;
+    --accent:#d946ef;--accent-hover:#c026d3;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#d946ef 0%,#06b6d4 50%,#22c55e 100%);--header-fg:#ffffff;
+    --common-bg:#241a40;--common-border:#7c3aed;--common-fg:#f5d0fe;
+    --pointer-color:#22d3ee;--pointer-stroke:#0e7490;
+    --stage-bg:radial-gradient(circle at 50% 30%,#1a132e 0%,#0f0a1f 100%);
+    --radius:14px;--radius-sm:10px;
+    --shadow:0 2px 8px rgba(217,70,239,0.30);
+    --shadow-strong:0 0 32px rgba(217,70,239,0.50),0 8px 28px rgba(0,0,0,0.5);
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  /* ===== パステル（淡色多色） ===== */
+  body[data-theme="pastel"]{
+    --bg:#fefce8;--panel:#ffffff;--panel-soft:#fef9c3;
+    --border:#fde047;--border-soft:#fef08a;
+    --text:#713f12;--muted:#a16207;
+    --accent:#eab308;--accent-hover:#ca8a04;--accent-fg:#ffffff;
+    --header-bg:linear-gradient(90deg,#fde047 0%,#bef264 33%,#86efac 66%,#a5f3fc 100%);--header-fg:#713f12;
+    --common-bg:#fef9c3;--common-border:#fde047;--common-fg:#713f12;
+    --pointer-color:#f43f5e;--pointer-stroke:#9f1239;
+    --stage-bg:linear-gradient(135deg,#fef9c3,#fce7f3,#cffafe,#dcfce7);
+    --radius:18px;--radius-sm:12px;
+    --shadow:0 2px 8px rgba(234,179,8,0.10);
+    --shadow-strong:0 8px 28px rgba(234,179,8,0.20);
+    --ui-font:"HGMaruGothicMPRO","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  }
+
+  /* ===== ダーク（黒＆ゴールド） ===== */
+  body[data-theme="dark"]{
+    --bg:#0c0a09;--panel:#1c1917;--panel-soft:#292524;
+    --border:#57534e;--border-soft:#44403c;
+    --text:#f5f5f4;--muted:#a8a29e;
+    --accent:#eab308;--accent-hover:#ca8a04;--accent-fg:#0c0a09;
+    --header-bg:linear-gradient(90deg,#1c1917,#44403c);--header-fg:#fef3c7;
+    --common-bg:#292524;--common-border:#57534e;--common-fg:#fef3c7;
+    --pointer-color:#eab308;--pointer-stroke:#713f12;
+    --stage-bg:radial-gradient(circle at 50% 30%,#1c1917 0%,#0c0a09 100%);
+    --radius:10px;--radius-sm:6px;
+    --shadow:0 2px 8px rgba(0,0,0,0.40);
+    --shadow-strong:0 8px 28px rgba(0,0,0,0.60),0 0 24px rgba(234,179,8,0.20);
+    --ui-font:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:var(--ui-font);background:var(--bg);color:var(--text)}
+  h1{font-size:var(--header-size);margin:0;padding:var(--header-pad);background:var(--header-bg);color:var(--header-fg);letter-spacing:.04em;font-weight:700;display:flex;align-items:center;gap:10px}
+  h1 .emoji{font-size:24px}
+
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;align-items:start}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+
+  .controls{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;margin-bottom:8px;font-size:13px}
+  .controls label{font-weight:600;color:var(--text)}
+  .controls input[type=number]{width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel);color:var(--text);font-family:inherit}
+  .controls input[type=text]{padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel);color:var(--text);font-family:inherit}
+  .controls input[type=range]{accent-color:var(--accent)}
+  .controls .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .common-section{background:var(--common-bg);border:1px solid var(--common-border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px}
+  .common-section h3{margin:0 0 8px 0;font-size:13px;color:var(--common-fg);font-weight:700;letter-spacing:.04em}
+
+  .btn{padding:7px 14px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:999px;cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s ease}
+  .btn:hover{background:var(--panel-soft);transform:translateY(-1px);box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(0)}
+  .btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+  .btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+  .btn-big{padding:14px 28px;font-size:16px;font-weight:700;border-radius:999px;box-shadow:var(--shadow-strong)}
+  .btn-spin{
+    background:linear-gradient(135deg,#ec4899,#a855f7);
+    color:#fff;border:none;
+    padding:18px 36px;font-size:20px;font-weight:800;
+    border-radius:999px;letter-spacing:.06em;
+    box-shadow:0 6px 20px rgba(236,72,153,0.35),inset 0 -3px 0 rgba(0,0,0,0.12);
+    cursor:pointer;transition:transform .12s ease,box-shadow .12s ease
+  }
+  .btn-spin:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(236,72,153,0.45),inset 0 -3px 0 rgba(0,0,0,0.12)}
+  .btn-spin:active{transform:translateY(0)}
+  .btn-spin:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-finish{
+    background:linear-gradient(135deg,#fbbf24,#f59e0b);
+    color:#fff;border:none;
+    padding:14px 28px;font-size:16px;font-weight:800;
+    border-radius:999px;letter-spacing:.04em;
+    box-shadow:0 4px 14px rgba(245,158,11,0.35),inset 0 -2px 0 rgba(0,0,0,0.12);
+    cursor:pointer;transition:transform .12s ease
+  }
+  .btn-finish:hover{transform:translateY(-2px)}
+
+  .actions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+  .section-bulk{
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:8px 12px;margin-bottom:6px;
+    background:var(--common-bg);border:1px solid var(--common-border);
+    border-radius:var(--radius-sm);font-size:12px
+  }
+  .section-bulk .bulk-label{font-weight:700;color:var(--common-fg);letter-spacing:.04em}
+  .section-bulk .bulk-item{display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text)}
+  .section-bulk .bulk-item input{cursor:pointer}
+  .section-bulk .bulk-btn{padding:4px 10px;font-size:12px}
+
+  .section-list{max-height:50vh;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:6px;background:var(--panel-soft)}
+  .section-row{display:grid;grid-template-columns:32px 1fr 40px 40px 52px;gap:5px;align-items:center;padding:3px 0;font-size:13px}
+  .section-row .idx{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .section-row input[type=text]{padding:6px 8px;border:1px solid var(--border);border-radius:999px;font-size:13px;width:100%;background:var(--panel);color:var(--text);font-family:inherit}
+  .section-row input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(236,72,153,0.25)}
+  .section-row .blank-toggle{font-size:11px;color:var(--muted)}
+
+  /* ルーレット表示 */
+  .roulette-wrap{
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:var(--stage-bg);
+    border:1px solid var(--border-soft);border-radius:var(--radius);padding:10px;
+    min-height:520px
+  }
+  .roulette-stage{
+    position:relative;width:100%;max-width:520px;aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center
+  }
+  .roulette-disc{
+    width:88%;height:88%;
+    transform-origin:center center;
+    filter:drop-shadow(0 6px 18px rgba(0,0,0,0.18))
+  }
+  .roulette-disc svg{width:100%;height:100%;display:block}
+  .roulette-pointers{
+    position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;z-index:5;
+    color:var(--pointer-color)
+  }
+  .roulette-pointers svg{width:100%;height:100%;display:block;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,0.30))}
+  .roulette-pointers polygon{fill:currentColor}
+  .roulette-center{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:36px;height:36px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,#fff 0%,var(--accent) 60%,var(--accent-hover) 100%);
+    border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3),inset 0 -2px 4px rgba(0,0,0,0.2);
+    z-index:6;pointer-events:none
+  }
+  .roulette-controls{
+    display:flex;gap:14px;align-items:center;justify-content:center;
+    margin-top:14px;flex-wrap:wrap
+  }
+  .winner-count-row{
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:2px solid var(--border);
+    padding:8px 14px;border-radius:999px;font-size:14px;font-weight:600;
+    color:var(--text)
+  }
+  .winner-count-row input[type=number]{
+    width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:999px;
+    font-size:14px;font-weight:700;color:var(--accent);text-align:center
+  }
+  .preview-info{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+
+  /* ===== カラーピッカー ===== */
+  .cpicker{position:relative;display:inline-block;vertical-align:middle}
+  .cpicker-btn{
+    width:42px;height:30px;border:1px solid var(--border);border-radius:var(--radius-sm);
+    cursor:pointer;padding:0;position:relative;transition:border-color .15s ease;
+    background-color:#fff;background-size:cover;background-position:center
+  }
+  .cpicker-btn:hover{border-color:var(--accent)}
+  .cpicker-btn::after{
+    content:'';position:absolute;right:3px;bottom:3px;width:0;height:0;
+    border-left:5px solid transparent;border-right:5px solid transparent;
+    border-top:5px solid rgba(0,0,0,0.45);pointer-events:none
+  }
+  .cpicker-popover{
+    position:absolute;top:34px;left:0;background:var(--panel);
+    border:1px solid var(--border);border-radius:var(--radius);padding:10px;
+    z-index:1000;display:none;box-shadow:var(--shadow-strong);width:max-content
+  }
+  .cpicker.open .cpicker-popover{display:block}
+  .cpicker-label{font-size:11px;color:var(--muted);margin:0 0 4px 0;font-weight:700;letter-spacing:.04em}
+  .cpicker-grid{display:grid;grid-template-columns:repeat(10,22px);gap:4px;margin-bottom:6px}
+  .cpicker-swatch{
+    width:22px;height:22px;border:1px solid #999;border-radius:4px;cursor:pointer;
+    padding:0;transition:transform .12s ease;background-clip:padding-box
+  }
+  .cpicker-swatch:hover{transform:scale(1.18);box-shadow:0 0 0 2px rgba(0,0,0,0.18);position:relative;z-index:5}
+  .cpicker-swatch.current{outline:2px solid #111;outline-offset:1px}
+  .cpicker-divider{height:1px;background:var(--border-soft);margin:8px 0}
+  .cpicker-more{
+    width:100%;padding:7px 8px;border:1px solid var(--border);background:var(--panel-soft);
+    cursor:pointer;border-radius:999px;font-size:12px;font-family:inherit;
+    color:var(--text);transition:all .15s ease
+  }
+  .cpicker-more:hover{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+  .cpicker-reset{
+    width:100%;padding:5px 8px;margin-top:4px;border:1px dashed var(--border);background:transparent;
+    cursor:pointer;border-radius:999px;font-size:11px;font-family:inherit;
+    color:var(--muted)
+  }
+  .cpicker-reset:hover{color:var(--text);border-style:solid}
+  .cpicker-btn.unset{
+    background:repeating-linear-gradient(45deg,#fff 0,#fff 4px,#ddd 4px,#ddd 8px)
+  }
+  .section-row .cpicker-btn{width:32px;height:26px}
+
+  /* ===== ダイアログ全般 ===== */
+  dialog{
+    border:1px solid var(--border);border-radius:var(--radius);padding:0;
+    background:var(--panel);color:var(--text);box-shadow:var(--shadow-strong);
+    max-width:90vw;max-height:90vh
+  }
+  dialog::backdrop{background:rgba(131,24,67,0.45);backdrop-filter:blur(2px)}
+  .dlg-body{padding:18px;max-width:600px}
+  .dlg-body h3{margin:0 0 8px 0;font-size:16px;color:var(--text)}
+  .dlg-body h4{margin:14px 0 6px 0;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border-soft);padding-bottom:4px}
+  .dlg-body textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;box-sizing:border-box;background:var(--panel);color:var(--text);resize:vertical}
+  .dlg-body .dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+  .dlg-body p.hint{margin:4px 0;font-size:12px;color:var(--muted);line-height:1.6}
+
+  /* ===== 履歴ダイアログ ===== */
+  #history-dialog .dlg-body{width:560px}
+  .hist-list{max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .hist-item{
+    display:grid;grid-template-columns:60px 1fr auto;gap:12px;align-items:center;
+    padding:10px 12px;border:1px solid var(--border-soft);border-radius:var(--radius-sm);
+    background:var(--panel-soft);cursor:pointer;transition:all .15s
+  }
+  .hist-item:hover{border-color:var(--accent);background:var(--panel);transform:translateY(-1px);box-shadow:var(--shadow)}
+  .hist-thumb{width:60px;height:60px}
+  .hist-thumb svg{width:100%;height:100%}
+  .hist-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .hist-title{font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-sub{font-size:11px;color:var(--muted)}
+  .hist-actions{display:flex;gap:4px}
+  .hist-actions .btn{padding:4px 10px;font-size:11px}
+  .hist-empty{padding:30px;text-align:center;color:var(--muted)}
+
+  /* ===== 当選演出（フルスクリーン） ===== */
+  #reveal-overlay{
+    position:fixed;inset:0;z-index:9999;display:none;
+    background:radial-gradient(circle at center,rgba(255,235,250,0.96) 0%,rgba(236,72,153,0.94) 100%);
+    overflow:hidden;align-items:center;justify-content:center;flex-direction:column
+  }
+  #reveal-overlay.show{display:flex;animation:reveal-fade .5s ease}
+  @keyframes reveal-fade{from{opacity:0}to{opacity:1}}
+  .reveal-title{
+    color:#fff;font-size:54px;font-weight:900;text-align:center;
+    text-shadow:0 4px 20px rgba(0,0,0,0.35),0 0 40px rgba(255,255,200,0.6);
+    letter-spacing:.1em;margin-bottom:24px;
+    animation:reveal-bounce 1s cubic-bezier(.5,1.6,.4,1)
+  }
+  @keyframes reveal-bounce{
+    0%{transform:scale(0) rotate(-12deg);opacity:0}
+    60%{transform:scale(1.2) rotate(4deg);opacity:1}
+    80%{transform:scale(0.95) rotate(-2deg)}
+    100%{transform:scale(1) rotate(0)}
+  }
+  .reveal-list{
+    display:flex;flex-wrap:wrap;justify-content:center;gap:20px;
+    padding:0 30px;max-width:95vw;max-height:60vh;overflow:auto
+  }
+  .reveal-card{
+    background:#fff;color:var(--text);
+    padding:24px 36px;border-radius:24px;
+    font-size:38px;font-weight:900;
+    box-shadow:0 12px 36px rgba(0,0,0,0.3),inset 0 -4px 0 rgba(236,72,153,0.2);
+    border:5px solid transparent;
+    background-image:linear-gradient(#fff,#fff),linear-gradient(135deg,#ec4899,#fbbf24,#a855f7);
+    background-origin:border-box;background-clip:padding-box,border-box;
+    animation:card-pop .8s cubic-bezier(.5,1.6,.4,1) backwards;
+    text-align:center;min-width:140px
+  }
+  @keyframes card-pop{
+    0%{transform:scale(0) rotate(20deg);opacity:0}
+    70%{transform:scale(1.15) rotate(-5deg);opacity:1}
+    100%{transform:scale(1) rotate(0)}
+  }
+  .reveal-actions{
+    display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;justify-content:center
+  }
+  .reveal-actions .btn{
+    background:#fff;color:var(--text);border:none;padding:12px 24px;
+    font-size:15px;font-weight:700;border-radius:999px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2)
+  }
+  .reveal-actions .btn-primary{background:#fff;color:var(--accent)}
+  .confetti{position:absolute;width:10px;height:14px;top:-30px;
+    animation:confetti-fall linear forwards;pointer-events:none}
+  @keyframes confetti-fall{
+    0%{transform:translateY(-30px) rotate(0)}
+    100%{transform:translateY(110vh) rotate(720deg)}
+  }
+  .sparkle{position:absolute;font-size:24px;pointer-events:none;
+    animation:sparkle-burst 1.6s ease-out forwards}
+  @keyframes sparkle-burst{
+    0%{transform:scale(0) rotate(0);opacity:1}
+    50%{transform:scale(1.4) rotate(180deg);opacity:1}
+    100%{transform:scale(0.6) rotate(360deg);opacity:0}
+  }
+
+  /* 当選済セクションのキラキラ表示（再スピン中） */
+  .winner-mark{font-size:18px;animation:wm-pulse 1.4s ease-in-out infinite}
+  @keyframes wm-pulse{
+    0%,100%{transform:scale(1);opacity:.9}
+    50%{transform:scale(1.3);opacity:1}
+  }
+
+  /* 共有ビュー：編集UIを隠して大きく */
+  body.share-view .editor-panel{display:none}
+  body.share-view .layout{grid-template-columns:1fr}
+  body.share-view .roulette-wrap{min-height:80vh}
+  body.share-view .roulette-stage{max-width:680px}
+  .share-banner{display:none;
+    background:linear-gradient(90deg,#fef3c7,#fde68a);
+    border:1px solid #fbbf24;color:#78350f;
+    border-radius:var(--radius-sm);padding:8px 12px;margin:0 0 10px;
+    font-size:12px;line-height:1.6;text-align:center}
+  body.share-view .share-banner{display:block}
+
+  .file-input{display:none}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* タイトル入力（完成ダイアログ） */
+  .title-input{
+    width:100%;padding:10px 14px;border:2px solid var(--border);
+    border-radius:999px;font-size:15px;font-family:inherit;
+    background:var(--panel);color:var(--text);box-sizing:border-box
+  }
+  .title-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(236,72,153,0.20)}
+</style>
+</head>
+<body>
+<h1><span class="emoji">🎯</span>オリジナルルーレット</h1>
+
+<p class="share-banner">🔗 共有されたルーレットを表示しています。「回転」を押して回してみてください。</p>
+
+<div class="layout">
+  <!-- ===== 左：設定パネル ===== -->
+  <div class="panel editor-panel">
+    <div class="controls">
+      <label>テーマ</label>
+      <div class="row">
+        <select id="ctl-uitheme" style="padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer">
+          <option value="wakuwaku">わくわく（ピンク）</option>
+          <option value="simple">シンプル（白＆青）</option>
+          <option value="natural">ナチュラル（ベージュ＆深緑）</option>
+          <option value="pop">ポップ（クリーム＆コーラル）</option>
+          <option value="modern">モダン（白黒＆ティール）</option>
+          <option value="ocean">オーシャン（青＆水色）</option>
+          <option value="forest">フォレスト（緑＆木）</option>
+          <option value="sunset">サンセット（夕焼け）</option>
+          <option value="neon">ネオン（暗色＆蛍光）</option>
+          <option value="pastel">パステル（淡色多色）</option>
+          <option value="dark">ダーク（黒＆ゴールド）</option>
+        </select>
+      </div>
+
+      <label>分割数</label>
+      <div class="row">
+        <input type="number" id="ctl-N" min="2" max="50" value="8">
+      </div>
+
+      <label>文字サイズ倍率</label>
+      <div class="row">
+        <input type="range" id="ctl-fontscale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:180px">
+        <span id="ctl-fontscale-val" class="hint">1.00x</span>
+      </div>
+
+      <label>テーマ色</label>
+      <div class="row">
+        <span id="ctl-theme-wrap"></span>
+        <label><input type="checkbox" id="ctl-gradient"> 自動グラデーション</label>
+      </div>
+
+      <label>文字色（共通）</label>
+      <div class="row">
+        <span id="ctl-textcolor-wrap"></span>
+      </div>
+
+      <label>境界線色</label>
+      <div class="row">
+        <span id="ctl-strokecolor-wrap"></span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-import-data">📥 データを取込</button>
+      <input type="file" id="file-input" class="file-input" accept=".xlsx,.xls,.xlsm,.csv">
+      <button class="btn" id="btn-clear">🗑 クリア</button>
+      <button class="btn" id="btn-export-json">💾 JSON保存</button>
+      <button class="btn" id="btn-import-json">📂 JSON読込</button>
+      <input type="file" id="json-input" class="file-input" accept=".json">
+      <button class="btn" id="btn-history">🕘 履歴</button>
+    </div>
+
+    <div class="section-bulk">
+      <span class="bulk-label">一括設定</span>
+      <label class="bulk-item">
+        <input type="checkbox" id="bulk-blank">
+        <span>全空白</span>
+      </label>
+      <button type="button" class="btn bulk-btn" id="bulk-clear-labels">全消去</button>
+      <button type="button" class="btn bulk-btn" id="bulk-reset-colors">全同色</button>
+    </div>
+    <div class="section-list" id="section-list"></div>
+  </div>
+
+  <!-- ===== 右：ルーレットプレビュー ===== -->
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>ルーレット</strong>
+      <span class="hint" id="preview-info"></span>
+    </div>
+
+    <div class="roulette-wrap">
+      <div class="roulette-stage" id="roulette-stage">
+        <div class="roulette-disc" id="roulette-disc"></div>
+        <div class="roulette-pointers" id="roulette-pointers"></div>
+        <div class="roulette-center"></div>
+      </div>
+
+      <div class="roulette-controls">
+        <div class="winner-count-row">
+          🎯 当選数 <input type="number" id="ctl-K2" min="1" max="50" value="1"> 個
+          <label style="margin-left:10px;font-size:13px;font-weight:600;cursor:pointer">
+            <input type="checkbox" id="ctl-complete"> 重複なし
+          </label>
+        </div>
+        <button class="btn-spin" id="btn-spin">🎡 回転</button>
+      </div>
+
+      <div class="preview-info" id="spin-status"></div>
+    </div>
+
+    <div style="display:flex;justify-content:center;margin-top:14px;gap:10px;flex-wrap:wrap" class="editor-panel">
+      <button class="btn-finish" id="btn-finish">🎊 完成 → 共有URL発行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== データを取込ダイアログ ===== -->
+<dialog id="import-dialog">
+  <form method="dialog" class="dlg-body">
+    <h3>📥 データを取込</h3>
+    <p class="hint">取込元を選んでください。A列（または1列目）のデータが取り込まれます。</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+      <button type="button" class="btn btn-primary" id="btn-import-excel">Excelから取込</button>
+      <button type="button" class="btn btn-primary" id="btn-import-gsheet">Googleスプレッドシートから取込</button>
+      <button type="button" class="btn btn-primary" id="btn-import-paste">その他のデータから取込（コピー＆貼り付け）</button>
+    </div>
+    <div class="dlg-actions" style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:10px">
+      <button type="submit" class="btn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== Googleスプレッドシート取込 ===== -->
+<dialog id="gsheet-dialog">
+  <form method="dialog" class="dlg-body">
+    <h3>Googleスプレッドシートから取込</h3>
+    <p class="hint">スプレッドシートを「リンクを知っている全員（閲覧）」に共有してから，URLを貼り付けてください。</p>
+    <textarea id="gsheet-url" rows="2" placeholder="https://docs.google.com/spreadsheets/d/..."></textarea>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-primary" id="btn-fetch-gsheet">URLから取込</button>
+    </div>
+    <div class="dlg-actions" style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:10px">
+      <button type="submit" class="btn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== コピー＆貼り付け取込 ===== -->
+<dialog id="paste-dialog">
+  <form method="dialog" class="dlg-body">
+    <h3>その他のデータから取込（コピー＆貼り付け）</h3>
+    <p class="hint">改行区切り・CSV・TSV（Excelやスプレッドシートの列をそのままコピー）に対応します。1行＝1セクション。</p>
+    <textarea id="paste-textarea" rows="12" placeholder="（ここに貼り付け）&#10;りんご&#10;みかん&#10;バナナ&#10;..."></textarea>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-primary" id="btn-do-paste-import">取込</button>
+      <button type="submit" class="btn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== 履歴ダイアログ ===== -->
+<dialog id="history-dialog">
+  <form method="dialog" class="dlg-body">
+    <h3>🕘 履歴</h3>
+    <p class="hint">過去に作成したルーレットから選んで読み込めます。最大20件まで保存されます。</p>
+    <div class="hist-list" id="hist-list"></div>
+    <div class="dlg-actions" style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:10px">
+      <button type="button" class="btn" id="btn-hist-clear-all">すべて削除</button>
+      <button type="submit" class="btn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== 完成ダイアログ ===== -->
+<dialog id="finish-dialog">
+  <form method="dialog" class="dlg-body" style="width:520px">
+    <h3>🎊 完成 → 共有URLを発行</h3>
+    <p class="hint">タイトルを入力してください（履歴に保存されます）。</p>
+    <input type="text" id="finish-title" class="title-input" placeholder="例：席替えルーレット" maxlength="40">
+    <div class="dlg-actions" style="margin-top:14px">
+      <button type="button" class="btn btn-primary" id="btn-do-finish">URLを発行する</button>
+      <button type="submit" class="btn">キャンセル</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== 共有URL表示ダイアログ ===== -->
+<dialog id="share-url-dialog">
+  <form method="dialog" class="dlg-body" style="width:560px">
+    <h3>✨ 共有用URLが発行されました</h3>
+    <p class="hint">下のURLをコピーして相手にお送りください。受け取った人がブラウザでURLを開くと，このルーレットがそのまま再現されます。</p>
+    <textarea id="share-url-text" readonly rows="4" style="font-family:Consolas,Menlo,monospace;font-size:11px;word-break:break-all"></textarea>
+    <p class="hint" style="font-size:11px;line-height:1.6;margin-top:6px">
+      ※ 設定（分割数・色・項目名など）すべての情報がURL自体に埋め込まれています。<br>
+      ※ サーバーへの送信は一切ありません（フラグメント形式）。<br>
+      ※ URLが長くなる場合は，メールやチャットの本文に直接貼り付けてご使用ください。
+    </p>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-primary" id="btn-share-copy">📋 URLをコピー</button>
+      <button type="submit" class="btn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== 当選演出オーバーレイ ===== -->
+<div id="reveal-overlay">
+  <div class="reveal-title" id="reveal-title">🎉 当選 🎉</div>
+  <div class="reveal-list" id="reveal-list"></div>
+  <div class="reveal-actions">
+    <button type="button" class="btn btn-primary" id="btn-reveal-close">閉じる</button>
+    <button type="button" class="btn" id="btn-reveal-respin">もう一度回す</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   共有URLビューの早期検出
+   ============================================================ */
+const isShareView = /^#share=/.test(location.hash || '');
+if(isShareView) document.body.classList.add('share-view');
+
+/* ============================================================
+   定数
+   ============================================================ */
+const STORAGE_KEY = 'originalRouletteStateV1';
+const HISTORY_KEY = 'originalRouletteHistoryV1';
+const HISTORY_MAX = 20;
+
+const DEFAULT_THEME = '#F472B6';
+const DEFAULT_TEXT  = '#1f2937';
+const DEFAULT_STROKE= '#ffffff';
+
+/* ============================================================
+   状態モデル
+   ============================================================ */
+function makeBlankSections(n){
+  const arr = [];
+  for(let i=0;i<n;i++) arr.push({label:'', fillColor:null, textColor:null, blank:false});
+  return arr;
+}
+function defaultLabels(n){
+  const labels = ['りんご','みかん','バナナ','ぶどう','メロン','いちご','もも','すいか','キウイ','パイン','レモン','マンゴー'];
+  const arr = [];
+  for(let i=0;i<n;i++){
+    arr.push({label: labels[i] || ('項目'+(i+1)), fillColor:null, textColor:null, blank:false});
+  }
+  return arr;
+}
+
+const state = loadState() || {
+  uiTheme: 'pastel',
+  N: 8,
+  K: 1,
+  complete: false,
+  completedSet: [],
+  themeColor: DEFAULT_THEME,
+  autoGradient: false,
+  fontSizeScale: 1.0,
+  textColor: DEFAULT_TEXT,
+  strokeColor: DEFAULT_STROKE,
+  rotation: 0,
+  sections: defaultLabels(8)
+};
+ensureStateIntegrity(state);
+
+function ensureStateIntegrity(s){
+  if(typeof s.uiTheme !== 'string') s.uiTheme = 'pastel';
+  if(typeof s.N !== 'number') s.N = 8;
+  if(typeof s.K !== 'number') s.K = 1;
+  if(typeof s.complete !== 'boolean') s.complete = false;
+  if(!Array.isArray(s.completedSet)) s.completedSet = [];
+  if(typeof s.fontSizeScale !== 'number') s.fontSizeScale = 1.0;
+  if(typeof s.rotation !== 'number') s.rotation = 0;
+  if(!s.themeColor) s.themeColor = DEFAULT_THEME;
+  if(!s.textColor) s.textColor = DEFAULT_TEXT;
+  if(!s.strokeColor) s.strokeColor = DEFAULT_STROKE;
+  if(typeof s.autoGradient !== 'boolean') s.autoGradient = false;
+  if(!Array.isArray(s.sections)) s.sections = makeBlankSections(s.N);
+  while(s.sections.length < s.N) s.sections.push({label:'', fillColor:null, textColor:null, blank:true});
+  s.sections.length = s.N;
+  for(const sec of s.sections){
+    if(typeof sec.label !== 'string') sec.label = '';
+    if(typeof sec.blank !== 'boolean') sec.blank = false;
+    if(sec.fillColor === undefined) sec.fillColor = null;
+    if(sec.textColor === undefined) sec.textColor = null;
+  }
+  // K の正規化：1〜N
+  if(s.K < 1) s.K = 1;
+  if(s.K > s.N) s.K = s.N;
+  // completedSet を有効インデックスに制限
+  s.completedSet = s.completedSet.filter(i => Number.isInteger(i) && i >= 0 && i < s.N);
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(obj && Array.isArray(obj.sections)) return obj;
+  }catch(e){}
+  return null;
+}
+function saveState(){
+  if(isShareView) return; // 共有ビューでは編集を保存しない
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+function setN(n){
+  n = Math.max(2, Math.min(50, n|0));
+  state.N = n;
+  if(n > state.sections.length){
+    while(state.sections.length < n) state.sections.push({label:'', fillColor:null, textColor:null, blank:true});
+  }else{
+    state.sections.length = n;
+  }
+  if(state.K > n) state.K = n;
+  if(state.K < 1) state.K = 1;
+  // 分割数が変わったら☆もリセット
+  state.completedSet = [];
+}
+
+/* ============================================================
+   色ユーティリティ
+   ============================================================ */
+function hexToHsl(hex){
+  let h = (hex||'#000').replace('#','');
+  if(h.length===3) h = h.split('').map(c=>c+c).join('');
+  const r = parseInt(h.slice(0,2),16)/255;
+  const g = parseInt(h.slice(2,4),16)/255;
+  const b = parseInt(h.slice(4,6),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let H=0, S=0, L=(max+min)/2;
+  if(max!==min){
+    const d = max-min;
+    S = L>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: H = (g-b)/d + (g<b?6:0); break;
+      case g: H = (b-r)/d + 2; break;
+      case b: H = (r-g)/d + 4; break;
+    }
+    H *= 60;
+  }
+  return {h:H, s:S*100, l:L*100};
+}
+function hslToHex(h,s,l){
+  s/=100; l/=100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => {
+    const c = l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
+    return Math.round(255*c).toString(16).padStart(2,'0');
+  };
+  return '#' + f(0) + f(8) + f(4);
+}
+function gradientColor(themeHex, i, n){
+  const {h,s} = hexToHsl(themeHex);
+  // 隣接セクションを区別しやすいよう，明度と彩度を動かす
+  const lo = 50, hi = 82;
+  const l = n<=1 ? (lo+hi)/2 : lo + (hi-lo) * (i / (n-1));
+  const ss = i % 2 === 0 ? Math.min(100, s) : Math.max(20, s*0.65);
+  return hslToHex(h, ss, l);
+}
+
+/* ============================================================
+   カラーピッカー
+   ============================================================ */
+const COLOR_PALETTE = [
+  '#000000','#222222','#444444','#666666','#888888','#AAAAAA','#CCCCCC','#E5E5E5','#F5F5F5','#FFFFFF',
+  '#7A0000','#B30000','#E03030','#FF6B6B','#FF8E8E','#FFB3B3','#FFCDD2','#FFE0E0','#FFEFEF','#FFF7F7',
+  '#7A3300','#B35400','#E07F00','#FFA040','#FFB347','#FFC988','#FFD9A8','#FFE4BD','#FFEED5','#FFF6E5',
+  '#7A6600','#B39900','#E0C200','#FFD93D','#FFE564','#FFEC8B','#FFF2A6','#FFF7C4','#FFFADC','#FFFCEE',
+  '#1F5A1F','#2E7D32','#43A047','#66BB6A','#81C784','#A5D6A7','#C5E1A5','#DCEDC8','#EEF5E0','#F5FAF0',
+  '#004D40','#00796B','#00A693','#26C6BA','#5BD9CF','#81E0D8','#A7E5DD','#C8ECE8','#DDF1ED','#EEF7F5',
+  '#0D3B7A','#1565C0','#1E88E5','#42A5F5','#64B5F6','#90CAF9','#A7D8FF','#C8E1FF','#DCEDFF','#EEF5FF',
+  '#3F1A7A','#5E35B1','#7E57C2','#9575CD','#A685D6','#C5A8E0','#D9C2EA','#E5D5F0','#EEDFF5','#F7EFFC',
+  '#7A0040','#B0185D','#D63384','#EC4899','#F472B6','#F48FB1','#F8BBD0','#FBCFE8','#FCE0EF','#FDEAF3',
+  '#3D2817','#5D4037','#795548','#A1887F','#BCAAA4','#D7CCC8','#EFE6E0','#F5EFE9','#FAF6F2','#FDFBF8'
+];
+
+let activeCpicker = null;
+
+function makeColorPicker(opts){
+  const wrap = document.createElement('span');
+  wrap.className = 'cpicker';
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'cpicker-btn';
+  btn.title = opts.title || '色を変更';
+  const pop = document.createElement('div'); pop.className = 'cpicker-popover';
+
+  if(opts.label){
+    const l = document.createElement('div'); l.className = 'cpicker-label';
+    l.textContent = opts.label; pop.appendChild(l);
+  }
+  const grid = document.createElement('div'); grid.className = 'cpicker-grid';
+  for(const c of COLOR_PALETTE){
+    const s = document.createElement('button');
+    s.type = 'button'; s.className = 'cpicker-swatch';
+    s.style.background = c; s.title = c; s.dataset.col = c.toLowerCase();
+    s.addEventListener('click', e=>{
+      e.stopPropagation(); setVal(c); closePop();
+      if(opts.onChange) opts.onChange(c);
+    });
+    grid.appendChild(s);
+  }
+  pop.appendChild(grid);
+
+  const native = document.createElement('input');
+  native.type = 'color'; native.value = opts.initial || '#000000';
+  Object.assign(native.style,{position:'absolute',opacity:'0',width:'0',height:'0',border:'0',padding:'0',pointerEvents:'none'});
+  native.tabIndex = -1;
+  native.addEventListener('input', ()=>{
+    setVal(native.value);
+    if(opts.onChange) opts.onChange(native.value);
+  });
+
+  const div = document.createElement('div'); div.className = 'cpicker-divider'; pop.appendChild(div);
+  const more = document.createElement('button');
+  more.type = 'button'; more.className = 'cpicker-more';
+  more.textContent = 'その他の色（RGB指定）...';
+  more.addEventListener('click', e=>{ e.stopPropagation(); native.click(); });
+  pop.appendChild(more);
+  pop.appendChild(native);
+
+  if(opts.allowReset){
+    const r = document.createElement('button');
+    r.type = 'button'; r.className = 'cpicker-reset';
+    r.textContent = '既定（テーマ色）に戻す';
+    r.addEventListener('click', e=>{
+      e.stopPropagation(); setVal(null); closePop();
+      if(opts.onReset) opts.onReset();
+    });
+    pop.appendChild(r);
+  }
+
+  function setVal(v){
+    if(v == null || v === ''){
+      btn.classList.add('unset'); btn.style.backgroundColor = ''; btn.dataset.col = '';
+    }else{
+      btn.classList.remove('unset'); btn.style.backgroundColor = v;
+      btn.dataset.col = v.toLowerCase(); native.value = v;
+    }
+    pop.querySelectorAll('.cpicker-swatch').forEach(s=>{
+      s.classList.toggle('current', s.dataset.col === (btn.dataset.col || ''));
+    });
+  }
+  function closePop(){ wrap.classList.remove('open'); if(activeCpicker===wrap) activeCpicker=null; }
+  function openPop(){
+    if(activeCpicker && activeCpicker!==wrap) activeCpicker.classList.remove('open');
+    wrap.classList.add('open'); activeCpicker = wrap;
+  }
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    if(wrap.classList.contains('open')) closePop(); else openPop();
+  });
+  if(opts.allowReset){
+    btn.addEventListener('contextmenu', e=>{
+      e.preventDefault(); setVal(null);
+      if(opts.onReset) opts.onReset();
+    });
+  }
+  setVal(opts.initial == null ? null : opts.initial);
+  wrap.appendChild(btn); wrap.appendChild(pop);
+  return { element: wrap, setValue: setVal, getValue: ()=> btn.dataset.col || '' };
+}
+
+document.addEventListener('click', ()=>{
+  if(activeCpicker){ activeCpicker.classList.remove('open'); activeCpicker=null; }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && activeCpicker){
+    activeCpicker.classList.remove('open'); activeCpicker = null;
+  }
+});
+
+/* ============================================================
+   ルーレットSVG生成
+   ============================================================ */
+function escapeXml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+}
+
+function buildRouletteSVG(opts){
+  // opts: {winnerSet:Set<index>, completedSet:Set<index>}
+  const VBOX = 400;
+  const cx = VBOX/2, cy = VBOX/2;
+  const R = VBOX/2 - 6;
+  const N = state.N;
+  const stroke = state.strokeColor || '#fff';
+  const strokeW = Math.max(1.0, VBOX*0.004);
+  const fontScale = state.fontSizeScale || 1.0;
+  const winners = (opts && opts.winnerSet) || new Set();
+  const completed = (opts && opts.completedSet) || new Set();
+
+  const parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VBOX} ${VBOX}" width="100%" height="100%">`);
+
+  // 外枠リング（装飾）
+  parts.push(`<defs>
+    <radialGradient id="rim-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="92%" stop-color="#fff7fb" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#be185d" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>`);
+  parts.push(`<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#ffffff" stroke="#be185d" stroke-width="${strokeW*1.5}"/>`);
+
+  // セクター
+  for(let i=0;i<N;i++){
+    const sec = state.sections[i] || {label:'', fillColor:null, blank:false};
+    const a1 = -Math.PI/2 + i * (2*Math.PI/N);
+    const a2 = -Math.PI/2 + (i+1) * (2*Math.PI/N);
+    const x1 = cx + R*Math.cos(a1);
+    const y1 = cy + R*Math.sin(a1);
+    const x2 = cx + R*Math.cos(a2);
+    const y2 = cy + R*Math.sin(a2);
+    const largeArc = (2*Math.PI/N) > Math.PI ? 1 : 0;
+
+    let fill;
+    if(sec.blank){
+      fill = '#ffffff';
+    }else if(sec.fillColor){
+      fill = sec.fillColor;
+    }else if(state.autoGradient){
+      fill = gradientColor(state.themeColor, i, N);
+    }else{
+      fill = state.themeColor;
+    }
+
+    let d;
+    if(N === 1){
+      d = `M ${cx-R} ${cy} A ${R} ${R} 0 1 1 ${cx+R} ${cy} A ${R} ${R} 0 1 1 ${cx-R} ${cy} Z`;
+    }else{
+      d = `M ${cx} ${cy} L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
+    }
+    parts.push(`<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" stroke-linejoin="round"/>`);
+
+    // 当選済セクション：枠を金色＋影
+    if(winners.has(i)){
+      parts.push(`<path d="${d}" fill="none" stroke="#fbbf24" stroke-width="${strokeW*2.5}" stroke-linejoin="round" opacity="0.9"/>`);
+    }
+  }
+
+  // ラベル
+  for(let i=0;i<N;i++){
+    const sec = state.sections[i] || {label:'', blank:false};
+    const label = (sec.label||'').trim();
+    if(!label || sec.blank) continue;
+    const aMid = -Math.PI/2 + (i + 0.5) * (2*Math.PI/N);
+
+    const charCount = Array.from(label).length;
+    const baseFs = Math.max(6, 28 - N * 0.4);
+    const tentativeR = R * 0.72;
+    const tentativeArc = 2 * Math.PI * tentativeR / N;
+    let fs = Math.min(baseFs, tentativeArc / Math.max(1,charCount) * 1.05);
+    fs = Math.max(5, fs) * fontScale;
+
+    // 配置半径
+    const r = R * 0.66;
+    const tx = cx + r * Math.cos(aMid);
+    const ty = cy + r * Math.sin(aMid);
+
+    // 文字の頭が外側を向く
+    const rotDeg = aMid * 180 / Math.PI + 90;
+
+    const textColor = sec.textColor || state.textColor || '#000';
+
+    parts.push(
+      `<text x="0" y="0" transform="translate(${tx.toFixed(3)},${ty.toFixed(3)}) rotate(${rotDeg.toFixed(2)})"`+
+      ` text-anchor="middle" dominant-baseline="middle"`+
+      ` fill="${textColor}" font-family='${escapeXml(getComputedStyle(document.body).fontFamily)}'`+
+      ` font-size="${fs.toFixed(2)}" font-weight="700"`+
+      ` paint-order="stroke" stroke="${stroke}" stroke-width="${(fs*0.08).toFixed(2)}" stroke-linejoin="round">${escapeXml(label)}</text>`
+    );
+
+    // 当選マーク（今回スピン分は⭐, 過去の重複なし当選分は☆）
+    if(winners.has(i) || completed.has(i)){
+      const mr = R * 0.88;
+      const mx = cx + mr * Math.cos(aMid);
+      const my = cy + mr * Math.sin(aMid);
+      const mark = winners.has(i) ? '⭐' : '☆';
+      parts.push(`<text x="${mx.toFixed(2)}" y="${my.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${(R*0.10).toFixed(1)}" fill="#facc15" stroke="#7c2d12" stroke-width="0.6" paint-order="stroke">${mark}</text>`);
+    }
+  }
+
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+/* ============================================================
+   レンダリング
+   ============================================================ */
+const themePicker = makeColorPicker({
+  initial: state.themeColor,
+  onChange: v=>{ state.themeColor = v; renderAll(); }
+});
+const textColorPicker = makeColorPicker({
+  initial: state.textColor,
+  onChange: v=>{ state.textColor = v; schedulePreview(); }
+});
+const strokeColorPicker = makeColorPicker({
+  initial: state.strokeColor,
+  onChange: v=>{ state.strokeColor = v; schedulePreview(); }
+});
+document.getElementById('ctl-theme-wrap').appendChild(themePicker.element);
+document.getElementById('ctl-textcolor-wrap').appendChild(textColorPicker.element);
+document.getElementById('ctl-strokecolor-wrap').appendChild(strokeColorPicker.element);
+
+const winnerHighlights = new Set(); // 当選済セクションのインデックス
+
+function renderAll(){
+  document.body.dataset.theme = state.uiTheme || 'pastel';
+  const themeSel = document.getElementById('ctl-uitheme');
+  if(themeSel) themeSel.value = state.uiTheme || 'pastel';
+
+  document.getElementById('ctl-N').value = state.N;
+  document.getElementById('ctl-K2').value = state.K;
+  document.getElementById('ctl-K2').max = state.N;
+  document.getElementById('ctl-complete').checked = !!state.complete;
+  document.getElementById('ctl-fontscale').value = state.fontSizeScale;
+  document.getElementById('ctl-fontscale-val').textContent = Number(state.fontSizeScale).toFixed(2)+'x';
+  themePicker.setValue(state.themeColor);
+  textColorPicker.setValue(state.textColor);
+  strokeColorPicker.setValue(state.strokeColor);
+  document.getElementById('ctl-gradient').checked = !!state.autoGradient;
+
+  const filledCount = state.sections.filter(s=>!s.blank && (s.label||'').trim()).length;
+  document.getElementById('preview-info').textContent = `${state.N}分割 / 入力済${filledCount}件 / 当選${state.K}個`;
+
+  renderSectionList();
+  updateBulkBlankCheckbox();
+  renderRoulette();
+  saveState();
+}
+
+function buildPointersSVG(K){
+  const VBOX = 100;
+  const cx = VBOX/2, cy = VBOX/2;
+  // ディスクは stage の 88%。ステージ全体を 100% とすると外周半径 = 44。
+  // ポインタの先端を 44 のすぐ内側 (43)，根元を 44 の外側 (51) に。
+  const tipR = 43;
+  const baseR = 51.5;
+  const halfWidth = 4.0; // 三角形の根元の半幅
+  const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VBOX} ${VBOX}" style="overflow:visible">`];
+  for(let i=0;i<K;i++){
+    const angleDeg = i * 360 / K - 90; // 0番目を上に
+    const angle = angleDeg * Math.PI / 180;
+    const tipX = cx + tipR * Math.cos(angle);
+    const tipY = cy + tipR * Math.sin(angle);
+    const bcx  = cx + baseR * Math.cos(angle);
+    const bcy  = cy + baseR * Math.sin(angle);
+    const perp = angle + Math.PI/2;
+    const bLx = bcx + halfWidth * Math.cos(perp);
+    const bLy = bcy + halfWidth * Math.sin(perp);
+    const bRx = bcx - halfWidth * Math.cos(perp);
+    const bRy = bcy - halfWidth * Math.sin(perp);
+    parts.push(`<polygon points="${tipX.toFixed(2)},${tipY.toFixed(2)} ${bLx.toFixed(2)},${bLy.toFixed(2)} ${bRx.toFixed(2)},${bRy.toFixed(2)}" stroke="rgba(0,0,0,0.55)" stroke-width="0.5" stroke-linejoin="round"/>`);
+  }
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+function renderRoulette(){
+  const disc = document.getElementById('roulette-disc');
+  const completedSet = state.complete ? new Set(state.completedSet) : new Set();
+  disc.innerHTML = buildRouletteSVG({winnerSet: winnerHighlights, completedSet});
+  applyRotationToPreview();
+  const pwrap = document.getElementById('roulette-pointers');
+  if(pwrap) pwrap.innerHTML = buildPointersSVG(state.K);
+}
+function applyRotationToPreview(){
+  const disc = document.getElementById('roulette-disc');
+  if(disc) disc.style.transform = `rotate(${state.rotation || 0}deg)`;
+}
+
+function renderSectionList(){
+  const list = document.getElementById('section-list');
+  list.innerHTML = '';
+  for(let i=0;i<state.N;i++){
+    if(!state.sections[i]) state.sections[i] = {label:'', fillColor:null, textColor:null, blank:true};
+    const sec = state.sections[i];
+    const row = document.createElement('div'); row.className = 'section-row';
+
+    const idx = document.createElement('div'); idx.className = 'idx';
+    idx.textContent = (i+1) + '';
+    row.appendChild(idx);
+
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text'; labelInput.value = sec.label || '';
+    labelInput.placeholder = '（項目名）';
+    labelInput.addEventListener('input', e=>{
+      sec.label = e.target.value;
+      schedulePreview();
+    });
+    row.appendChild(labelInput);
+
+    const fillInitial = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, i, state.N) : state.themeColor);
+    const fillPicker = makeColorPicker({
+      initial: fillInitial,
+      title: '塗り色（右クリックでテーマ色に戻す）',
+      label: '塗り色',
+      allowReset: true,
+      onChange: v=>{ sec.fillColor = v; schedulePreview(); },
+      onReset:  ()=>{ sec.fillColor = null; renderAll(); }
+    });
+    if(!sec.fillColor) fillPicker.setValue(fillInitial);
+    row.appendChild(fillPicker.element);
+
+    const textInitial = sec.textColor || state.textColor;
+    const textPicker = makeColorPicker({
+      initial: textInitial,
+      title: '文字色（右クリックで共通色に戻す）',
+      label: '文字色',
+      allowReset: true,
+      onChange: v=>{ sec.textColor = v; schedulePreview(); },
+      onReset:  ()=>{ sec.textColor = null; renderAll(); }
+    });
+    if(!sec.textColor) textPicker.setValue(textInitial);
+    row.appendChild(textPicker.element);
+
+    const blankWrap = document.createElement('label');
+    blankWrap.className = 'blank-toggle';
+    const blankCb = document.createElement('input');
+    blankCb.type = 'checkbox'; blankCb.className = 'blank-cb';
+    blankCb.checked = !!sec.blank;
+    blankCb.addEventListener('change', e=>{
+      sec.blank = e.target.checked;
+      schedulePreview();
+    });
+    blankWrap.appendChild(blankCb);
+    blankWrap.appendChild(document.createTextNode('空白'));
+    row.appendChild(blankWrap);
+
+    list.appendChild(row);
+  }
+}
+
+let previewTimer = null;
+function schedulePreview(){
+  if(previewTimer) cancelAnimationFrame(previewTimer);
+  previewTimer = requestAnimationFrame(()=>{
+    const filledCount = state.sections.filter(s=>!s.blank && (s.label||'').trim()).length;
+    document.getElementById('preview-info').textContent = `${state.N}分割 / 入力済${filledCount}件 / 当選${state.K}個`;
+    updateBulkBlankCheckbox();
+    renderRoulette();
+    saveState();
+  });
+}
+
+/* ============================================================
+   イベント：基本コントロール
+   ============================================================ */
+document.getElementById('ctl-uitheme').addEventListener('change', e=>{
+  state.uiTheme = e.target.value;
+  document.body.dataset.theme = state.uiTheme;
+  saveState();
+});
+
+document.getElementById('ctl-N').addEventListener('change', e=>{
+  let n = parseInt(e.target.value, 10);
+  if(isNaN(n) || n<2) n = 2;
+  if(n>50) n = 50;
+  e.target.value = n;
+  setN(n);
+  winnerHighlights.clear();
+  renderAll();
+});
+function syncK(v){
+  let k = parseInt(v, 10);
+  if(isNaN(k) || k<1) k = 1;
+  if(k > state.N) k = state.N;
+  state.K = k;
+  document.getElementById('ctl-K2').value = k;
+  document.getElementById('preview-info').textContent =
+    `${state.N}分割 / 入力済${state.sections.filter(s=>!s.blank && (s.label||'').trim()).length}件 / 当選${state.K}個`;
+  renderRoulette();
+  saveState();
+}
+document.getElementById('ctl-K2').addEventListener('change', e=> syncK(e.target.value));
+document.getElementById('ctl-K2').addEventListener('input', e=> syncK(e.target.value));
+
+document.getElementById('ctl-complete').addEventListener('change', e=>{
+  state.complete = e.target.checked;
+  state.completedSet = [];
+  winnerHighlights.clear();
+  renderAll();
+});
+
+document.getElementById('ctl-fontscale').addEventListener('input', e=>{
+  state.fontSizeScale = parseFloat(e.target.value);
+  document.getElementById('ctl-fontscale-val').textContent = state.fontSizeScale.toFixed(2)+'x';
+  schedulePreview();
+});
+document.getElementById('ctl-gradient').addEventListener('change', e=>{
+  state.autoGradient = e.target.checked;
+  schedulePreview();
+});
+
+/* ===== 一括設定 ===== */
+function updateBulkBlankCheckbox(){
+  const cb = document.getElementById('bulk-blank');
+  if(!cb) return;
+  let blanks = 0;
+  for(let i=0;i<state.N;i++) if(state.sections[i] && state.sections[i].blank) blanks++;
+  if(blanks === 0){ cb.checked = false; cb.indeterminate = false; }
+  else if(blanks === state.N){ cb.checked = true; cb.indeterminate = false; }
+  else { cb.checked = false; cb.indeterminate = true; }
+}
+document.getElementById('bulk-blank').addEventListener('change', e=>{
+  const target = e.target.checked;
+  for(let i=0;i<state.N;i++){
+    if(!state.sections[i]) state.sections[i] = {label:'', fillColor:null, textColor:null, blank:true};
+    state.sections[i].blank = target;
+  }
+  renderAll();
+});
+document.getElementById('bulk-clear-labels').addEventListener('click', ()=>{
+  if(!confirm('項目名をすべて消去しますか？\n（色や空白フラグはそのまま保持します）')) return;
+  for(let i=0;i<state.N;i++){
+    if(!state.sections[i]) continue;
+    state.sections[i].label = '';
+  }
+  renderAll();
+});
+document.getElementById('bulk-reset-colors').addEventListener('click', ()=>{
+  if(!confirm('個別色（塗り色・文字色）をすべて「既定（テーマ色）」に戻しますか？')) return;
+  for(let i=0;i<state.N;i++){
+    if(!state.sections[i]) continue;
+    state.sections[i].fillColor = null;
+    state.sections[i].textColor = null;
+  }
+  renderAll();
+});
+
+document.getElementById('btn-clear').addEventListener('click', ()=>{
+  if(!confirm('すべての項目をクリアしますか？\n（分割数Nは保持します）')) return;
+  for(let i=0;i<state.N;i++){
+    state.sections[i] = {label:'', fillColor:null, textColor:null, blank:true};
+  }
+  state.completedSet = [];
+  winnerHighlights.clear();
+  renderAll();
+});
+
+/* ============================================================
+   データ取込（Excel / Google / Paste）
+   ============================================================ */
+function applyLabels(labels){
+  if(labels.length > 50){
+    alert(`${labels.length}行ありますが，このアプリは最大50分割までです。先頭50行を取り込みます。`);
+    labels = labels.slice(0,50);
+  }
+  if(labels.length < 2){
+    alert('項目は2件以上必要です。'); return;
+  }
+  setN(labels.length);
+  for(let i=0;i<labels.length;i++){
+    if(!state.sections[i]) state.sections[i] = {label:'', fillColor:null, textColor:null, blank:false};
+    state.sections[i].label = labels[i];
+    state.sections[i].blank = labels[i] === '';
+  }
+  state.completedSet = [];
+  winnerHighlights.clear();
+  renderAll();
+}
+
+function parseCSV(text){
+  const rows = [];
+  let cur = [], field = '', inQ = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQ){
+      if(c === '"' && text[i+1] === '"'){ field += '"'; i++; }
+      else if(c === '"') inQ = false;
+      else field += c;
+    }else{
+      if(c === '"') inQ = true;
+      else if(c === ','){ cur.push(field); field=''; }
+      else if(c === '\n'){ cur.push(field); rows.push(cur); cur=[]; field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length>0 || cur.length>0){ cur.push(field); rows.push(cur); }
+  return rows;
+}
+function extractLabelsFromText(text){
+  if(!text) return [];
+  if(text.includes('\t')){
+    return text.split(/\r?\n/).map(line => (line.split('\t')[0] || '').trim());
+  }
+  const rows = parseCSV(text);
+  return rows.map(r => String((r && r[0]) || '').trim());
+}
+
+const importDialog = document.getElementById('import-dialog');
+document.getElementById('btn-import-data').addEventListener('click', ()=>{
+  if(typeof importDialog.showModal === 'function') importDialog.showModal();
+  else importDialog.setAttribute('open','');
+});
+document.getElementById('btn-import-excel').addEventListener('click', ()=>{
+  importDialog.close();
+  document.getElementById('file-input').click();
+});
+document.getElementById('btn-import-paste').addEventListener('click', ()=>{
+  importDialog.close();
+  document.getElementById('paste-textarea').value = '';
+  const d = document.getElementById('paste-dialog');
+  if(typeof d.showModal === 'function') d.showModal();
+  else d.setAttribute('open','');
+});
+
+document.getElementById('file-input').addEventListener('change', async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if(!ws) throw new Error('シートが見つかりません');
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    let labels = rows.map(r => String((r && r[0]) || '').trim());
+    while(labels.length>0 && labels[labels.length-1] === '') labels.pop();
+    if(labels.length === 0){ alert('A列にデータが見つかりませんでした。'); return; }
+    applyLabels(labels);
+    alert(`${Math.min(labels.length,50)}件取り込みました。`);
+  }catch(err){
+    alert('取込に失敗しました: ' + err.message);
+  }finally{
+    e.target.value = '';
+  }
+});
+
+/* Googleスプレッドシート */
+function parseSheetUrl(url){
+  url = (url||'').trim();
+  if(!url) return null;
+  if(/[?&](output=csv|format=csv)|tqx=out%3Acsv|tqx=out:csv/.test(url)){
+    return {direct: url};
+  }
+  const pubMatch = url.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9_-]+)/);
+  if(pubMatch){
+    const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+    return {published:true, longid: pubMatch[1], gid: gidMatch ? gidMatch[1] : '0'};
+  }
+  const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!idMatch) return null;
+  const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+  return {id: idMatch[1], gid: gidMatch ? gidMatch[1] : '0'};
+}
+function fetchSheetViaJsonp(id, gid){
+  return new Promise((resolve, reject) => {
+    const cbName = '__gvizCb_' + Date.now() + '_' + Math.floor(Math.random()*1e9);
+    let script = null, timer = null;
+    const cleanup = () => {
+      try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+      if(timer){ clearTimeout(timer); timer = null; }
+      if(script && script.parentNode) script.parentNode.removeChild(script);
+    };
+    window[cbName] = function(data){
+      try{
+        const rows = (data && data.table && data.table.rows) || [];
+        const csvLines = rows.map(r => {
+          const cells = (r && r.c) || [];
+          return cells.map(c => {
+            if(!c) return '';
+            const v = (c.f != null) ? c.f : (c.v != null ? c.v : '');
+            const s = String(v);
+            return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+          }).join(',');
+        });
+        resolve(csvLines.join('\n'));
+      }catch(e){ reject(e); }finally{ cleanup(); }
+    };
+    script = document.createElement('script');
+    script.src = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?tqx=out:json;responseHandler:${cbName}&gid=${encodeURIComponent(gid)}`;
+    script.onerror = () => { cleanup(); reject(new Error('JSONP読込失敗')); };
+    timer = setTimeout(() => { cleanup(); reject(new Error('JSONPタイムアウト')); }, 15000);
+    document.head.appendChild(script);
+  });
+}
+async function fetchSheetCSV(parsed){
+  let candidates = [];
+  if(parsed.direct) candidates = [parsed.direct];
+  else if(parsed.published){
+    candidates = [
+      `https://docs.google.com/spreadsheets/d/e/${parsed.longid}/pub?gid=${parsed.gid}&single=true&output=csv`,
+      `https://docs.google.com/spreadsheets/d/e/${parsed.longid}/pub?output=csv`
+    ];
+  }else{
+    candidates = [
+      `https://docs.google.com/spreadsheets/d/${parsed.id}/gviz/tq?tqx=out:csv&gid=${parsed.gid}`,
+      `https://docs.google.com/spreadsheets/d/${parsed.id}/export?format=csv&gid=${parsed.gid}`
+    ];
+  }
+  const errors = [];
+  for(const url of candidates){
+    try{
+      const res = await fetch(url, {credentials:'omit', redirect:'follow', mode:'cors'});
+      if(!res.ok){ errors.push(`HTTP ${res.status}`); continue; }
+      const text = await res.text();
+      const trimmed = text.trim();
+      if(trimmed.startsWith('<')){ errors.push('HTML返却（共有設定要確認）'); continue; }
+      if(trimmed.startsWith(')]}\'') || trimmed.startsWith('/*O_o*/')){ errors.push('JSON返却'); continue; }
+      if(text.length === 0){ errors.push('空のレスポンス'); continue; }
+      return text;
+    }catch(e){ errors.push(e.message || 'fetch失敗'); }
+  }
+  if(parsed.id){
+    try{
+      const csv = await fetchSheetViaJsonp(parsed.id, parsed.gid || '0');
+      if(csv && csv.trim().length > 0) return csv;
+      errors.push('JSONP: 空');
+    }catch(e){ errors.push('JSONP: ' + (e.message||'失敗')); }
+  }
+  throw new Error(errors.join(' / '));
+}
+const gsheetDialog = document.getElementById('gsheet-dialog');
+document.getElementById('btn-import-gsheet').addEventListener('click', ()=>{
+  importDialog.close();
+  document.getElementById('gsheet-url').value = '';
+  if(typeof gsheetDialog.showModal === 'function') gsheetDialog.showModal();
+  else gsheetDialog.setAttribute('open','');
+});
+document.getElementById('btn-fetch-gsheet').addEventListener('click', async ()=>{
+  const url = document.getElementById('gsheet-url').value.trim();
+  if(!url){ alert('URLが空です。'); return; }
+  const parsed = parseSheetUrl(url);
+  if(!parsed){ alert('URLの形式が認識できませんでした。'); return; }
+  try{
+    const csv = await fetchSheetCSV(parsed);
+    let labels = extractLabelsFromText(csv);
+    while(labels.length>0 && labels[labels.length-1] === '') labels.pop();
+    if(labels.length === 0){ alert('A列にデータが見つかりませんでした。'); return; }
+    applyLabels(labels);
+    gsheetDialog.close();
+    alert(`${Math.min(labels.length,50)}件取り込みました。`);
+  }catch(err){
+    alert('取込に失敗しました。\n\n'+
+      'エラー詳細: ' + err.message + '\n\n'+
+      '解決策の候補：\n'+
+      '① スプレッドシートを「リンクを知っている全員（閲覧）」に共有\n'+
+      '② 「その他のデータから取込」でA列をコピー＆貼り付け');
+  }
+});
+
+const pasteDialog = document.getElementById('paste-dialog');
+document.getElementById('btn-do-paste-import').addEventListener('click', ()=>{
+  const text = document.getElementById('paste-textarea').value;
+  if(!text.trim()){ alert('テキストが空です。'); return; }
+  let labels = extractLabelsFromText(text);
+  while(labels.length>0 && labels[labels.length-1] === '') labels.pop();
+  if(labels.length === 0){ alert('データが見つかりませんでした。'); return; }
+  applyLabels(labels);
+  pasteDialog.close();
+  alert(`${Math.min(labels.length,50)}件取り込みました。`);
+});
+
+/* ============================================================
+   JSON 保存・読込
+   ============================================================ */
+document.getElementById('btn-export-json').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0,10);
+  a.download = `ルーレット設定_${stamp}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+});
+document.getElementById('btn-import-json').addEventListener('click', ()=>{
+  document.getElementById('json-input').click();
+});
+document.getElementById('json-input').addEventListener('change', async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    if(!Array.isArray(obj.sections)) throw new Error('形式が不正です');
+    Object.assign(state, obj);
+    ensureStateIntegrity(state);
+    winnerHighlights.clear();
+    renderAll();
+    alert('設定を読み込みました。');
+  }catch(err){
+    alert('読込に失敗しました: ' + err.message);
+  }finally{
+    e.target.value = '';
+  }
+});
+
+/* ============================================================
+   履歴
+   ============================================================ */
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return arr;
+  }catch(e){}
+  return [];
+}
+function saveHistory(arr){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function addHistory(title){
+  const arr = loadHistory();
+  const entry = {
+    id: Date.now() + '_' + Math.floor(Math.random()*1e6),
+    title: title || '無題のルーレット',
+    date: new Date().toISOString(),
+    state: JSON.parse(JSON.stringify(state))
+  };
+  arr.unshift(entry);
+  if(arr.length > HISTORY_MAX) arr.length = HISTORY_MAX;
+  saveHistory(arr);
+}
+
+const historyDialog = document.getElementById('history-dialog');
+document.getElementById('btn-history').addEventListener('click', ()=>{
+  renderHistoryList();
+  if(typeof historyDialog.showModal === 'function') historyDialog.showModal();
+  else historyDialog.setAttribute('open','');
+});
+function renderHistoryList(){
+  const list = document.getElementById('hist-list');
+  const arr = loadHistory();
+  list.innerHTML = '';
+  if(arr.length === 0){
+    list.innerHTML = '<div class="hist-empty">まだ履歴はありません。<br>「🎊 完成」ボタンを押すと履歴に追加されます。</div>';
+    return;
+  }
+  for(const entry of arr){
+    const item = document.createElement('div'); item.className = 'hist-item';
+
+    // サムネ（簡易SVG）
+    const thumb = document.createElement('div'); thumb.className = 'hist-thumb';
+    thumb.innerHTML = buildThumbSVG(entry.state);
+    item.appendChild(thumb);
+
+    const meta = document.createElement('div'); meta.className = 'hist-meta';
+    const t = document.createElement('div'); t.className = 'hist-title'; t.textContent = entry.title;
+    const s = document.createElement('div'); s.className = 'hist-sub';
+    const date = new Date(entry.date);
+    const dateStr = date.toLocaleString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    s.textContent = `${entry.state.N}分割 / 当選${entry.state.K}個 / ${dateStr}`;
+    meta.appendChild(t); meta.appendChild(s);
+    item.appendChild(meta);
+
+    const acts = document.createElement('div'); acts.className = 'hist-actions';
+    const loadBtn = document.createElement('button');
+    loadBtn.type = 'button'; loadBtn.className = 'btn btn-primary';
+    loadBtn.textContent = '読込';
+    loadBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      Object.assign(state, JSON.parse(JSON.stringify(entry.state)));
+      ensureStateIntegrity(state);
+      winnerHighlights.clear();
+      renderAll();
+      historyDialog.close();
+    });
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button'; delBtn.className = 'btn';
+    delBtn.textContent = '削除';
+    delBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      if(!confirm(`「${entry.title}」を履歴から削除しますか？`)) return;
+      const a2 = loadHistory().filter(h => h.id !== entry.id);
+      saveHistory(a2);
+      renderHistoryList();
+    });
+    acts.appendChild(loadBtn); acts.appendChild(delBtn);
+    item.appendChild(acts);
+
+    // クリックで読込
+    item.addEventListener('click', ()=>{ loadBtn.click(); });
+
+    list.appendChild(item);
+  }
+}
+function buildThumbSVG(s){
+  const VBOX = 60;
+  const cx = VBOX/2, cy = VBOX/2;
+  const R = VBOX/2 - 2;
+  const N = s.N || (s.sections ? s.sections.length : 8);
+  const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VBOX} ${VBOX}">`];
+  parts.push(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#fff" stroke="#999" stroke-width="0.5"/>`);
+  for(let i=0;i<N;i++){
+    const sec = (s.sections && s.sections[i]) || {};
+    const a1 = -Math.PI/2 + i * (2*Math.PI/N);
+    const a2 = -Math.PI/2 + (i+1) * (2*Math.PI/N);
+    const x1 = cx + R*Math.cos(a1);
+    const y1 = cy + R*Math.sin(a1);
+    const x2 = cx + R*Math.cos(a2);
+    const y2 = cy + R*Math.sin(a2);
+    let fill = sec.fillColor || (s.autoGradient ? gradientColor(s.themeColor || DEFAULT_THEME, i, N) : (s.themeColor || DEFAULT_THEME));
+    if(sec.blank) fill = '#fff';
+    if(N === 1){
+      parts.push(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}"/>`);
+    }else{
+      parts.push(`<path d="M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${fill}" stroke="#fff" stroke-width="0.4"/>`);
+    }
+  }
+  parts.push('</svg>');
+  return parts.join('');
+}
+document.getElementById('btn-hist-clear-all').addEventListener('click', ()=>{
+  if(!confirm('履歴をすべて削除しますか？\n（この操作は取り消せません）')) return;
+  saveHistory([]);
+  renderHistoryList();
+});
+
+/* ============================================================
+   スピン（1回スピン → K個ポインタが同時に当選セクターを指す）
+   ============================================================ */
+let spinning = false;
+const SPIN_DURATION = 5000; // ms
+
+// ポインタ p の絶対角度（0番目=上=-90度，時計回りに 360/K 間隔）
+function pointerAngleDeg(p, K){
+  return -90 + p * 360 / K;
+}
+
+// 与えられた回転角度のとき，ポインタpの先にあるセクター index を返す
+function sectorAtPointer(rotation, p, K){
+  const N = state.N;
+  const sectorWidth = 360 / N;
+  const pAngle = pointerAngleDeg(p, K);
+  // セクター i の回転後中心 = -90 + (i+0.5)*sectorWidth + rotation
+  // pAngle == sectorMid → i + 0.5 = (pAngle + 90 - rotation) / sectorWidth
+  let v = pAngle + 90 - rotation;
+  v = ((v % 360) + 360) % 360;
+  return Math.floor(v / sectorWidth) % N;
+}
+
+// rotation でのK個ポインタすべての当選セクター（重複は時計回り側に詰める）
+function calcWinners(rotation, K){
+  const N = state.N;
+  const raw = [];
+  for(let p=0;p<K;p++) raw.push(sectorAtPointer(rotation, p, K));
+  const used = new Set();
+  const final = [];
+  for(const w of raw){
+    let idx = w, tries = 0;
+    while(used.has(idx) && tries < N){ idx = (idx + 1) % N; tries++; }
+    used.add(idx); final.push(idx);
+  }
+  return final;
+}
+
+// 候補セクター（空白でなく項目名のあるもの）
+function getCandidates(){
+  const cand = [];
+  for(let i=0;i<state.N;i++){
+    const sec = state.sections[i];
+    if(!sec.blank && (sec.label||'').trim()) cand.push(i);
+  }
+  if(cand.length) return cand;
+  // フォールバック
+  for(let i=0;i<state.N;i++) if(!state.sections[i].blank) cand.push(i);
+  if(cand.length) return cand;
+  for(let i=0;i<state.N;i++) cand.push(i);
+  return cand;
+}
+
+// 上のポインタ(=p=0)に target セクターが来る回転角度
+function rotationForSectorAtTop(targetSector, jitterFrac){
+  const N = state.N;
+  const sectorWidth = 360 / N;
+  const sectorMid = -90 + (targetSector + 0.5) * sectorWidth;
+  let r = -90 - sectorMid;
+  r += (jitterFrac || 0) * sectorWidth;
+  return r;
+}
+
+function spinAnimate(targetRotation, durationMs){
+  return new Promise(resolve=>{
+    const disc = document.getElementById('roulette-disc');
+    const cur = state.rotation || 0;
+    const curMod = ((cur % 360) + 360) % 360;
+    let delta = ((targetRotation % 360) + 360) % 360 - curMod;
+    while(delta < 0) delta += 360;
+    const fullRotations = 5 + Math.floor(Math.random() * 3);
+    delta += 360 * fullRotations;
+    const final = cur + delta;
+    disc.style.transition = `transform ${durationMs}ms cubic-bezier(0.17, 0.67, 0.16, 1)`;
+    disc.style.transform = `rotate(${final}deg)`;
+    const onEnd = ()=>{
+      disc.removeEventListener('transitionend', onEnd);
+      state.rotation = ((final % 360) + 360) % 360;
+      disc.style.transition = 'none';
+      disc.style.transform = `rotate(${state.rotation}deg)`;
+      void disc.offsetWidth;
+      resolve();
+    };
+    disc.addEventListener('transitionend', onEnd, {once:true});
+    setTimeout(()=>{ if(disc) onEnd(); }, durationMs + 500);
+  });
+}
+
+async function runSpin(){
+  if(spinning) return;
+  spinning = true;
+  document.getElementById('btn-spin').disabled = true;
+  winnerHighlights.clear();
+
+  const K = state.K;
+  const allCandidates = getCandidates();
+  if(allCandidates.length === 0){
+    alert('当選候補がありません。項目を入力してください。');
+    spinning = false;
+    document.getElementById('btn-spin').disabled = false;
+    return;
+  }
+
+  // 重複なしモード：当選済みを除外。残り候補が足りなければ☆をリセットしてやり直し
+  let candidates = allCandidates;
+  if(state.complete){
+    const remaining = allCandidates.filter(i => !state.completedSet.includes(i));
+    if(remaining.length < K){
+      state.completedSet = [];
+      candidates = allCandidates;
+    }else{
+      candidates = remaining;
+    }
+  }
+  renderRoulette();
+
+  // 上のポインタにランダム候補を合わせる（残りのポインタの先は固定オフセットで決まる）
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+  const jitter = (Math.random() - 0.5) * 0.6; // セクター幅の±30%
+  const targetRot = rotationForSectorAtTop(target, jitter);
+
+  const status = document.getElementById('spin-status');
+  status.textContent = '🌀 回転中…';
+  await spinAnimate(targetRot, SPIN_DURATION);
+  status.textContent = '';
+
+  // 当選計算：K個ポインタすべての先のセクター（重複は時計回りで回避）
+  let winners = calcWinners(state.rotation, K);
+  // 候補外（空白）しか当たっていない場合の救済
+  const validCount = winners.filter(i => candidates.includes(i)).length;
+  if(validCount === 0){
+    winners = [target];
+  }
+
+  for(const w of winners) winnerHighlights.add(w);
+
+  // 重複なしモード：今回当選分（label有りのセクター）を completedSet に追加
+  if(state.complete){
+    for(const w of winners){
+      const sec = state.sections[w];
+      if(sec && !sec.blank && (sec.label||'').trim() && !state.completedSet.includes(w)){
+        state.completedSet.push(w);
+      }
+    }
+  }
+
+  renderRoulette();
+
+  showReveal(winners);
+  spinning = false;
+  document.getElementById('btn-spin').disabled = false;
+  saveState();
+}
+document.getElementById('btn-spin').addEventListener('click', runSpin);
+
+/* ============================================================
+   当選演出
+   ============================================================ */
+const revealOverlay = document.getElementById('reveal-overlay');
+const revealList = document.getElementById('reveal-list');
+const revealTitle = document.getElementById('reveal-title');
+
+function showReveal(winnerIndexes){
+  revealList.innerHTML = '';
+  revealTitle.textContent = winnerIndexes.length === 1 ? '🎉 当選！ 🎉' : `🎉 当選 ${winnerIndexes.length}つ 🎉`;
+  for(let i=0;i<winnerIndexes.length;i++){
+    const idx = winnerIndexes[i];
+    const sec = state.sections[idx] || {};
+    const card = document.createElement('div');
+    card.className = 'reveal-card';
+    card.style.animationDelay = (0.15 * i + 0.2) + 's';
+    const fill = sec.fillColor || (state.autoGradient ? gradientColor(state.themeColor, idx, state.N) : state.themeColor);
+    card.style.backgroundImage = `linear-gradient(${fill}cc,${fill}cc),linear-gradient(135deg,#ec4899,#fbbf24,#a855f7)`;
+    card.style.color = sec.textColor || state.textColor || '#000';
+    card.textContent = (sec.label||'').trim() || '（空白）';
+    revealList.appendChild(card);
+  }
+  revealOverlay.classList.add('show');
+  launchConfetti(80);
+  launchSparkles(20);
+}
+function hideReveal(){
+  revealOverlay.classList.remove('show');
+  // パーティクルを掃除
+  revealOverlay.querySelectorAll('.confetti,.sparkle').forEach(el=>el.remove());
+}
+document.getElementById('btn-reveal-close').addEventListener('click', hideReveal);
+document.getElementById('btn-reveal-respin').addEventListener('click', ()=>{
+  hideReveal();
+  setTimeout(()=>runSpin(), 200);
+});
+
+function launchConfetti(count){
+  const colors = ['#ec4899','#fbbf24','#a855f7','#3b82f6','#10b981','#f43f5e','#06b6d4','#facc15'];
+  const W = window.innerWidth;
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = (Math.random() * W) + 'px';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    const dur = 2.4 + Math.random() * 2.6;
+    const delay = Math.random() * 1.2;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = delay + 's';
+    el.style.transform = `rotate(${Math.random()*360}deg)`;
+    if(Math.random() > 0.5){ el.style.width = '8px'; el.style.height = '12px'; }
+    if(Math.random() > 0.7){ el.style.borderRadius = '50%'; el.style.width = '10px'; el.style.height = '10px'; }
+    revealOverlay.appendChild(el);
+    setTimeout(()=>el.remove(), (dur + delay) * 1000 + 200);
+  }
+}
+function launchSparkles(count){
+  const W = window.innerWidth, H = window.innerHeight;
+  const symbols = ['✨','⭐','🌟','💫'];
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'sparkle';
+    el.textContent = symbols[Math.floor(Math.random()*symbols.length)];
+    el.style.left = (Math.random() * W) + 'px';
+    el.style.top  = (Math.random() * H * 0.7 + H * 0.1) + 'px';
+    el.style.animationDelay = (Math.random() * 0.8) + 's';
+    revealOverlay.appendChild(el);
+    setTimeout(()=>el.remove(), 2400);
+  }
+}
+
+/* ============================================================
+   完成 → 共有URL
+   ============================================================ */
+const SHARE_VERSION = 1;
+const finishDialog = document.getElementById('finish-dialog');
+const shareDialog = document.getElementById('share-url-dialog');
+const shareUrlText = document.getElementById('share-url-text');
+
+document.getElementById('btn-finish').addEventListener('click', ()=>{
+  // 既定タイトル：先頭3項目から
+  const sample = state.sections.filter(s=>!s.blank && (s.label||'').trim())
+                                .slice(0,3).map(s=>s.label.trim()).join('・');
+  document.getElementById('finish-title').value = sample || 'マイルーレット';
+  if(typeof finishDialog.showModal === 'function') finishDialog.showModal();
+  else finishDialog.setAttribute('open','');
+});
+
+document.getElementById('btn-do-finish').addEventListener('click', async ()=>{
+  const title = document.getElementById('finish-title').value.trim() || '無題のルーレット';
+  finishDialog.close();
+  // 履歴に追加
+  addHistory(title);
+  // URL発行
+  try{
+    const url = await encodeShareToHash(title);
+    shareUrlText.value = url;
+    if(typeof shareDialog.showModal === 'function') shareDialog.showModal();
+    else shareDialog.setAttribute('open','');
+    setTimeout(()=>{ shareUrlText.focus(); shareUrlText.select(); }, 50);
+  }catch(e){
+    alert('URLの発行に失敗しました：' + (e && e.message ? e.message : e));
+  }
+});
+
+async function encodeShareToHash(title){
+  const payload = {
+    v: SHARE_VERSION,
+    title: title,
+    state: state
+  };
+  const json = JSON.stringify(payload);
+  let b64;
+  try{
+    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    const buf = await new Response(stream).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for(let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    b64 = 'z' + btoa(bin);
+  }catch(e){
+    b64 = 'r' + btoa(unescape(encodeURIComponent(json)));
+  }
+  b64 = b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return location.origin + location.pathname + '#share=' + b64;
+}
+async function decodeShareFromHash(rawHash){
+  let s = rawHash.replace(/-/g,'+').replace(/_/g,'/');
+  const marker = s.charAt(0);
+  s = s.slice(1);
+  while(s.length % 4) s += '=';
+  const bin = atob(s);
+  if(marker === 'z'){
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    const text = await new Response(stream).text();
+    return JSON.parse(text);
+  }else if(marker === 'r'){
+    return JSON.parse(decodeURIComponent(escape(bin)));
+  }else{
+    throw new Error('unknown share marker: ' + marker);
+  }
+}
+document.getElementById('btn-share-copy').addEventListener('click', async ()=>{
+  const url = shareUrlText.value;
+  let copied = false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    }
+  }catch(e){}
+  if(!copied){
+    shareUrlText.focus(); shareUrlText.select();
+    try{ document.execCommand('copy'); copied = true; }catch(e){}
+  }
+  const btn = document.getElementById('btn-share-copy');
+  const original = btn.textContent;
+  btn.textContent = copied ? '✅ コピーしました' : '⚠ 失敗（手動でコピーしてください）';
+  setTimeout(()=>{ btn.textContent = original; }, 1800);
+});
+
+async function tryLoadFromShareHash(){
+  const m = (location.hash || '').match(/^#share=(.+)$/);
+  if(!m) return false;
+  try{
+    const payload = await decodeShareFromHash(m[1]);
+    if(!payload || !payload.state) throw new Error('invalid payload');
+    Object.assign(state, payload.state);
+    ensureStateIntegrity(state);
+    winnerHighlights.clear();
+    if(payload.title){
+      document.title = payload.title + ' — オリジナルルーレット';
+    }
+    return true;
+  }catch(e){
+    console.error('share decode error:', e);
+    alert('共有URLの読み込みに失敗しました。\nURLが途中で切れていないかご確認ください。');
+    return false;
+  }
+}
+
+/* ============================================================
+   起動
+   ============================================================ */
+(async function init(){
+  if(isShareView){
+    const ok = await tryLoadFromShareHash();
+    if(!ok) document.body.classList.remove('share-view');
+  }
+  document.body.dataset.theme = state.uiTheme || 'pastel';
+  renderAll();
+})();
+
+</script>
+</body>
+</html>
