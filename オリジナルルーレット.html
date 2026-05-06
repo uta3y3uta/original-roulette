@@ -1023,11 +1023,15 @@ function buildRouletteSVG(opts){
 
     const charCount = Array.from(label).length;
     const baseFs = Math.max(6, 28 - N * 0.4);
-    // 配置半径：外側ぎりぎりまで寄せる
-    const r = R * 0.84;
-    const tentativeArc = 2 * Math.PI * r / N;
+    // フォントサイズを先に決定（仮の半径で弧長から計算）
+    const tentativeR = R * 0.88;
+    const tentativeArc = 2 * Math.PI * tentativeR / N;
     let fs = Math.min(baseFs, tentativeArc / Math.max(1,charCount) * 1.05);
     fs = Math.max(5, fs) * fontScale;
+
+    // 配置半径：文字の外側端が円のはじっこぎりぎりに来るよう動的に決定
+    const edgeMargin = R * 0.018; // 外周からの最小マージン（約1.8%）
+    const r = R - edgeMargin - fs * 0.5;
 
     const tx = cx + r * Math.cos(aMid);
     const ty = cy + r * Math.sin(aMid);
