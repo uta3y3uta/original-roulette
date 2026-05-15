@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-n">
+<meta name="build-rev" content="2026-05-06-o">
 <title>くじ引きアプリ</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -687,7 +687,6 @@
 <body>
 <h1><span class="emoji">🎯</span>くじ引きアプリ</h1>
 
-<p class="share-banner" id="share-banner">🔗 共有版を表示しています。ボタンを押して結果を見てみてください。</p>
 
 <div class="layout">
   <!-- ===== 左：設定パネル ===== -->
@@ -747,7 +746,7 @@
   <div class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <strong id="preview-title">ルーレット</strong>
-      <span class="hint" id="preview-info"></span>
+      <span class="hint" id="preview-info" style="display:none"></span>
     </div>
 
     <!-- モード切替 -->
@@ -774,7 +773,7 @@
 
       <div class="roulette-controls">
         <div class="winner-count-row">
-          <span id="ctl-K2-wrap">🎯 当選数
+          <span id="ctl-K2-wrap">
             <button type="button" class="k-step-btn" id="ctl-K2-dec" aria-label="減らす">−</button>
             <input type="number" id="ctl-K2" min="1" max="50" value="1" inputmode="numeric">
             <button type="button" class="k-step-btn" id="ctl-K2-inc" aria-label="増やす">＋</button>
@@ -791,9 +790,8 @@
     </div>
 
     <div style="display:flex;justify-content:center;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap" class="editor-panel">
-      <button class="btn-finish" id="btn-finish">🎊 完成 → 共有URL発行</button>
+      <button class="btn-finish" id="btn-finish">完成 → 共有URL発行</button>
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text)">
-        🎨
         <select id="ctl-uitheme" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer">
           <option value="pastel">パステル（淡色多色）</option>
           <option value="wakuwaku">わくわく（ピンク）</option>
@@ -872,7 +870,7 @@
 <!-- ===== 完成ダイアログ ===== -->
 <dialog id="finish-dialog">
   <form method="dialog" class="dlg-body" style="width:520px">
-    <h3>🎊 完成 → 共有URLを発行</h3>
+    <h3>完成 → 共有URLを発行</h3>
     <p class="hint">タイトルを入力してください（履歴に保存されます）。</p>
     <input type="text" id="finish-title" class="title-input" placeholder="例：席替えルーレット" maxlength="40">
     <div class="dlg-actions" style="margin-top:14px">
@@ -919,7 +917,7 @@
 const isShareView = /^#share=/.test(location.hash || '');
 if(isShareView){
   document.body.classList.add('share-view');
-  // 共有ビューでは「🎊 完成 → 共有URL発行」ボタンを
+  // 共有ビューでは「完成 → 共有URL発行」ボタンを
   // DOMごと取り除く（CSSだけでなく確実に消す）
   const removeForShareView = ()=>{
     const fin = document.getElementById('btn-finish');
@@ -1896,30 +1894,106 @@ function launchConfettiFromCard(cell){
   }
 }
 
-function shuffleCards(){
+let shuffling = false;
+async function shuffleCards(){
   const N = state.N;
   if(N < 2) return;
-  // フィッシャー–イェーツ
+  if(shuffling) return;
+  const grid = document.getElementById('card-grid');
+  if(!grid) return;
+
+  const cells = Array.from(grid.querySelectorAll('.card-cell'));
+  if(cells.length === 0){
+    // 何もない場合は順序だけ入替
+    state.cardOrder = makeShuffledOrder(N);
+    renderCards();
+    saveState();
+    return;
+  }
+
+  shuffling = true;
+  const shuffleBtn = document.getElementById('btn-shuffle');
+  if(shuffleBtn) shuffleBtn.disabled = true;
+
+  // ===== Phase 1: 中央へ集まる =====
+  const gridRect = grid.getBoundingClientRect();
+  const centerX = gridRect.left + gridRect.width / 2;
+  const centerY = gridRect.top + gridRect.height / 2;
+
+  cells.forEach((c, i) => {
+    const r = c.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dx = centerX - cx;
+    const dy = centerY - cy;
+    const rot = (Math.random() * 60 - 30);
+    c.style.transition = 'transform 0.45s cubic-bezier(0.5, 0, 0.5, 1)';
+    c.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(0.32) rotate(${rot.toFixed(1)}deg)`;
+    c.style.zIndex = String(50 + i);
+    c.style.pointerEvents = 'none';
+  });
+
+  await new Promise(r => setTimeout(r, 470));
+
+  // ===== 中央で順序を入替 =====
   const arr = state.cardOrder.slice();
   for(let i=arr.length-1; i>0; i--){
     const j = Math.floor(Math.random() * (i+1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   state.cardOrder = arr;
-  // めくり状態は idx 基準で保持（位置と独立）
-  // シャッフル時はフリップ遷移を抑止するため一時的にクラスを付ける
-  const grid = document.getElementById('card-grid');
-  if(grid){
-    grid.querySelectorAll('.card-cell').forEach(c => c.classList.add('shuffling'));
-  }
+
+  // 再描画後，全カードを中央起点に設定してから新位置へ散らばらせる
   renderCards();
-  // 次フレームで shuffling クラスを外す（描画後にトランジション再有効化）
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      const g = document.getElementById('card-grid');
-      if(g) g.querySelectorAll('.card-cell.shuffling').forEach(c => c.classList.remove('shuffling'));
-    });
+  const newCells = Array.from(grid.querySelectorAll('.card-cell'));
+  const gridRect2 = grid.getBoundingClientRect();
+  const cx2 = gridRect2.left + gridRect2.width / 2;
+  const cy2 = gridRect2.top + gridRect2.height / 2;
+
+  newCells.forEach((c, i) => {
+    const r = c.getBoundingClientRect();
+    const ccx = r.left + r.width / 2;
+    const ccy = r.top + r.height / 2;
+    const dx = cx2 - ccx;
+    const dy = cy2 - ccy;
+    const rot = (Math.random() * 60 - 30);
+    c.style.transition = 'none';
+    c.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(0.32) rotate(${rot.toFixed(1)}deg)`;
+    c.style.zIndex = String(50 + i);
+    c.style.pointerEvents = 'none';
   });
+
+  // リフロー強制
+  void grid.offsetHeight;
+
+  // ===== Phase 2: ばらばらに散らばる（少しずつ遅延をつけて） =====
+  // ランダム順で展開して「ばさっ」と散る感じに
+  const order = newCells.map((_, i) => i);
+  for(let i=order.length-1; i>0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  order.forEach((cellIdx, k) => {
+    const c = newCells[cellIdx];
+    c.style.transition = 'transform 0.55s cubic-bezier(0.22, 1.35, 0.36, 1)';
+    c.style.transitionDelay = (k * 0.018).toFixed(3) + 's';
+    c.style.transform = 'translate(0,0) scale(1) rotate(0deg)';
+  });
+
+  const totalScatter = 560 + newCells.length * 18 + 80;
+  await new Promise(r => setTimeout(r, totalScatter));
+
+  // ===== クリーンアップ =====
+  newCells.forEach(c => {
+    c.style.transition = '';
+    c.style.transitionDelay = '';
+    c.style.transform = '';
+    c.style.zIndex = '';
+    c.style.pointerEvents = '';
+  });
+
+  shuffling = false;
+  if(shuffleBtn) shuffleBtn.disabled = false;
   saveState();
 }
 
@@ -2430,7 +2504,7 @@ function renderHistoryList(){
   const arr = loadHistory();
   list.innerHTML = '';
   if(arr.length === 0){
-    list.innerHTML = '<div class="hist-empty">まだ履歴はありません。<br>「🎊 完成」ボタンを押すと履歴に追加されます。</div>';
+    list.innerHTML = '<div class="hist-empty">まだ履歴はありません。<br>「完成」ボタンを押すと履歴に追加されます。</div>';
     return;
   }
   for(const entry of arr){
