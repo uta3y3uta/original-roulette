@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-p">
+<meta name="build-rev" content="2026-05-06-q">
 <title>くじ引きアプリ</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -285,6 +285,26 @@
     background:#fff;color:var(--accent);border-color:var(--accent);
   }
   .section-bulk .bulk-btn:hover{background:var(--panel-soft)}
+
+  /* セクション一覧の下の控えめテーマ切替 */
+  .theme-foot{
+    margin-top:10px;display:flex;justify-content:flex-end;
+  }
+  .theme-foot-label{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;color:var(--muted);opacity:.75;
+    transition:opacity .15s ease;
+  }
+  .theme-foot-label:hover{opacity:1}
+  .theme-foot-label > span{font-weight:600}
+  .theme-foot-label select{
+    padding:3px 8px;border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);font-size:11px;
+    background:var(--panel);color:var(--muted);
+    font-family:inherit;cursor:pointer;
+  }
+  .theme-foot-label select:hover{color:var(--text);border-color:var(--border)}
+  .theme-foot-label select:focus{outline:none;border-color:var(--accent)}
 
   .section-list{max-height:50vh;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:6px;background:var(--panel-soft)}
   .section-row{display:grid;grid-template-columns:32px 1fr 40px 40px 52px;gap:5px;align-items:center;padding:3px 0;font-size:13px}
@@ -710,7 +730,7 @@
 </style>
 </head>
 <body>
-<h1><span class="emoji">🎯</span>くじ引きアプリ</h1>
+<h1>オリジナルくじ引きアプリ</h1>
 
 
 <div class="layout">
@@ -749,7 +769,6 @@
     </div>
 
     <div class="section-bulk">
-      <span class="bulk-label">一括設定</span>
       <label class="bulk-item">
         <input type="checkbox" id="bulk-blank">
         <span>全空白</span>
@@ -762,6 +781,24 @@
       <button type="button" class="btn bulk-btn" id="btn-history">履歴</button>
     </div>
     <div class="section-list" id="section-list"></div>
+    <div class="theme-foot editor-panel">
+      <label class="theme-foot-label">
+        <span>テーマ</span>
+        <select id="ctl-uitheme">
+          <option value="pastel">パステル（淡色多色）</option>
+          <option value="wakuwaku">わくわく（ピンク）</option>
+          <option value="simple">シンプル（白＆青）</option>
+          <option value="natural">ナチュラル（ベージュ＆深緑）</option>
+          <option value="pop">ポップ（クリーム＆コーラル）</option>
+          <option value="modern">モダン（白黒＆ティール）</option>
+          <option value="ocean">オーシャン（青＆水色）</option>
+          <option value="forest">フォレスト（緑＆木）</option>
+          <option value="sunset">サンセット（夕焼け）</option>
+          <option value="neon">ネオン（暗色＆蛍光）</option>
+          <option value="dark">ダーク（黒＆ゴールド）</option>
+        </select>
+      </label>
+    </div>
   </div>
 
   <!-- ===== 右：プレビュー ===== -->
@@ -813,21 +850,6 @@
 
     <div style="display:flex;justify-content:center;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap" class="editor-panel">
       <button class="btn-finish" id="btn-finish">完成 → 共有URL発行</button>
-      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text)">
-        <select id="ctl-uitheme" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer">
-          <option value="pastel">パステル（淡色多色）</option>
-          <option value="wakuwaku">わくわく（ピンク）</option>
-          <option value="simple">シンプル（白＆青）</option>
-          <option value="natural">ナチュラル（ベージュ＆深緑）</option>
-          <option value="pop">ポップ（クリーム＆コーラル）</option>
-          <option value="modern">モダン（白黒＆ティール）</option>
-          <option value="ocean">オーシャン（青＆水色）</option>
-          <option value="forest">フォレスト（緑＆木）</option>
-          <option value="sunset">サンセット（夕焼け）</option>
-          <option value="neon">ネオン（暗色＆蛍光）</option>
-          <option value="dark">ダーク（黒＆ゴールド）</option>
-        </select>
-      </label>
     </div>
   </div>
 </div>
