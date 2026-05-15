@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-m">
+<meta name="build-rev" content="2026-05-06-n">
 <title>くじ引きアプリ</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3120,10 +3120,12 @@ const shareUrlText = document.getElementById('share-url-text');
 // 共有ビューでは btn-finish を DOM から削除しているため null チェック
 const _btnFinish = document.getElementById('btn-finish');
 if(_btnFinish) _btnFinish.addEventListener('click', ()=>{
-  // 既定タイトル：先頭3項目から
-  const sample = state.sections.filter(s=>!s.blank && (s.label||'').trim())
-                                .slice(0,3).map(s=>s.label.trim()).join('・');
-  document.getElementById('finish-title').value = sample || 'マイルーレット';
+  // 既定タイトル：現在選択中のモード名
+  const modeTitle =
+    state.mode === 'fukubiki' ? '🎁 紅白福引き' :
+    state.mode === 'card'     ? '🃏 カードめくり' :
+                                '🎡 ルーレット';
+  document.getElementById('finish-title').value = modeTitle;
   if(typeof finishDialog.showModal === 'function') finishDialog.showModal();
   else finishDialog.setAttribute('open','');
 });
