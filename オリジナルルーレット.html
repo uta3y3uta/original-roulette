@@ -7,8 +7,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-l">
-<title>オリジナルルーレット</title>
+<meta name="build-rev" content="2026-05-06-m">
+<title>くじ引きアプリ</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -311,9 +311,25 @@
     color:var(--text)
   }
   .winner-count-row input[type=number]{
-    width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:999px;
-    font-size:14px;font-weight:700;color:var(--accent);text-align:center
+    width:48px;padding:5px 4px;border:1px solid var(--border);border-radius:8px;
+    font-size:14px;font-weight:700;color:var(--accent);text-align:center;
+    /* スピナーボタンを隠してタップしやすい +/- ボタンに置き換え */
+    -moz-appearance:textfield;appearance:textfield;
   }
+  .winner-count-row input[type=number]::-webkit-outer-spin-button,
+  .winner-count-row input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance:none;margin:0;
+  }
+  .k-step-btn{
+    width:32px;height:32px;border:1px solid var(--border);background:var(--panel-soft);
+    border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;line-height:1;
+    color:var(--accent);font-family:inherit;display:inline-flex;align-items:center;justify-content:center;
+    padding:0;transition:background .12s ease,transform .08s ease;
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  }
+  .k-step-btn:hover{background:var(--panel);transform:translateY(-1px)}
+  .k-step-btn:active{transform:translateY(0) scale(0.95)}
+  .k-step-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
   .preview-info{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
 
   /* ===== カラーピッカー ===== */
@@ -669,7 +685,7 @@
 </style>
 </head>
 <body>
-<h1><span class="emoji">🎯</span>オリジナルルーレット</h1>
+<h1><span class="emoji">🎯</span>くじ引きアプリ</h1>
 
 <p class="share-banner" id="share-banner">🔗 共有版を表示しています。ボタンを押して結果を見てみてください。</p>
 
@@ -677,23 +693,6 @@
   <!-- ===== 左：設定パネル ===== -->
   <div class="panel editor-panel">
     <div class="controls">
-      <label>テーマ</label>
-      <div class="row">
-        <select id="ctl-uitheme" style="padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer">
-          <option value="wakuwaku">わくわく（ピンク）</option>
-          <option value="simple">シンプル（白＆青）</option>
-          <option value="natural">ナチュラル（ベージュ＆深緑）</option>
-          <option value="pop">ポップ（クリーム＆コーラル）</option>
-          <option value="modern">モダン（白黒＆ティール）</option>
-          <option value="ocean">オーシャン（青＆水色）</option>
-          <option value="forest">フォレスト（緑＆木）</option>
-          <option value="sunset">サンセット（夕焼け）</option>
-          <option value="neon">ネオン（暗色＆蛍光）</option>
-          <option value="pastel">パステル（淡色多色）</option>
-          <option value="dark">ダーク（黒＆ゴールド）</option>
-        </select>
-      </div>
-
       <label>分割数</label>
       <div class="row">
         <input type="number" id="ctl-N" min="2" max="50" value="8">
@@ -753,8 +752,8 @@
 
     <!-- モード切替 -->
     <div class="mode-toggle editor-panel" role="tablist">
-      <button class="mode-btn active" data-mode="roulette" type="button">🎡 ルーレット</button>
       <button class="mode-btn" data-mode="fukubiki" type="button">🎁 紅白福引き</button>
+      <button class="mode-btn active" data-mode="roulette" type="button">🎡 ルーレット</button>
       <button class="mode-btn" data-mode="card" type="button">🃏 カードめくり</button>
     </div>
 
@@ -775,7 +774,11 @@
 
       <div class="roulette-controls">
         <div class="winner-count-row">
-          <span id="ctl-K2-wrap">🎯 当選数 <input type="number" id="ctl-K2" min="1" max="50" value="1"> 個</span>
+          <span id="ctl-K2-wrap">🎯 当選数
+            <button type="button" class="k-step-btn" id="ctl-K2-dec" aria-label="減らす">−</button>
+            <input type="number" id="ctl-K2" min="1" max="50" value="1" inputmode="numeric">
+            <button type="button" class="k-step-btn" id="ctl-K2-inc" aria-label="増やす">＋</button>
+            個</span>
           <label style="margin-left:10px;font-size:13px;font-weight:600;cursor:pointer">
             <input type="checkbox" id="ctl-complete"> 重複あり
           </label>
@@ -787,8 +790,24 @@
       <div class="preview-info" id="spin-status"></div>
     </div>
 
-    <div style="display:flex;justify-content:center;margin-top:14px;gap:10px;flex-wrap:wrap" class="editor-panel">
+    <div style="display:flex;justify-content:center;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap" class="editor-panel">
       <button class="btn-finish" id="btn-finish">🎊 完成 → 共有URL発行</button>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text)">
+        🎨
+        <select id="ctl-uitheme" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer">
+          <option value="pastel">パステル（淡色多色）</option>
+          <option value="wakuwaku">わくわく（ピンク）</option>
+          <option value="simple">シンプル（白＆青）</option>
+          <option value="natural">ナチュラル（ベージュ＆深緑）</option>
+          <option value="pop">ポップ（クリーム＆コーラル）</option>
+          <option value="modern">モダン（白黒＆ティール）</option>
+          <option value="ocean">オーシャン（青＆水色）</option>
+          <option value="forest">フォレスト（緑＆木）</option>
+          <option value="sunset">サンセット（夕焼け）</option>
+          <option value="neon">ネオン（暗色＆蛍光）</option>
+          <option value="dark">ダーク（黒＆ゴールド）</option>
+        </select>
+      </label>
     </div>
   </div>
 </div>
@@ -799,9 +818,9 @@
     <h3>📥 データを取込</h3>
     <p class="hint">取込元を選んでください。A列（または1列目）のデータが取り込まれます。</p>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-      <button type="button" class="btn btn-primary" id="btn-import-excel">Excelから取込</button>
-      <button type="button" class="btn btn-primary" id="btn-import-gsheet">Googleスプレッドシートから取込</button>
-      <button type="button" class="btn btn-primary" id="btn-import-paste">その他のデータから取込（コピー＆貼り付け）</button>
+      <button type="button" class="btn btn-primary" id="btn-import-paste">コピペから</button>
+      <button type="button" class="btn btn-primary" id="btn-import-excel">Excelから</button>
+      <button type="button" class="btn btn-primary" id="btn-import-gsheet">Googleスプレッドシートから</button>
     </div>
     <div class="dlg-actions" style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:10px">
       <button type="submit" class="btn">閉じる</button>
@@ -812,7 +831,7 @@
 <!-- ===== Googleスプレッドシート取込 ===== -->
 <dialog id="gsheet-dialog">
   <form method="dialog" class="dlg-body">
-    <h3>Googleスプレッドシートから取込</h3>
+    <h3>Googleスプレッドシートから</h3>
     <p class="hint">スプレッドシートを「リンクを知っている全員（閲覧）」に共有してから，URLを貼り付けてください。</p>
     <textarea id="gsheet-url" rows="2" placeholder="https://docs.google.com/spreadsheets/d/..."></textarea>
     <div class="dlg-actions">
@@ -827,7 +846,7 @@
 <!-- ===== コピー＆貼り付け取込 ===== -->
 <dialog id="paste-dialog">
   <form method="dialog" class="dlg-body">
-    <h3>その他のデータから取込（コピー＆貼り付け）</h3>
+    <h3>コピペから（コピー＆貼り付け）</h3>
     <p class="hint">改行区切り・CSV・TSV（Excelやスプレッドシートの列をそのままコピー）に対応します。1行＝1セクション。</p>
     <textarea id="paste-textarea" rows="12" placeholder="（ここに貼り付け）&#10;りんご&#10;みかん&#10;バナナ&#10;..."></textarea>
     <div class="dlg-actions">
@@ -1355,6 +1374,10 @@ function renderAll(){
   document.getElementById('ctl-N').value = state.N;
   document.getElementById('ctl-K2').value = state.K;
   document.getElementById('ctl-K2').max = state.N;
+  const _kDec = document.getElementById('ctl-K2-dec');
+  const _kInc = document.getElementById('ctl-K2-inc');
+  if(_kDec) _kDec.disabled = (state.K <= 1);
+  if(_kInc) _kInc.disabled = (state.K >= state.N);
   // チェック＝「重複あり」（=state.completeがfalse）
   document.getElementById('ctl-complete').checked = !state.complete;
   document.getElementById('ctl-fontscale').value = state.fontSizeScale;
@@ -2031,6 +2054,10 @@ function syncK(v){
   if(k > state.N) k = state.N;
   state.K = k;
   document.getElementById('ctl-K2').value = k;
+  const dec = document.getElementById('ctl-K2-dec');
+  const inc = document.getElementById('ctl-K2-inc');
+  if(dec) dec.disabled = (k <= 1);
+  if(inc) inc.disabled = (k >= state.N);
   document.getElementById('preview-info').textContent =
     `${state.N}分割 / 入力済${state.sections.filter(s=>!s.blank && (s.label||'').trim()).length}件 / 当選${state.K}個`;
   renderRoulette();
@@ -2038,6 +2065,8 @@ function syncK(v){
 }
 document.getElementById('ctl-K2').addEventListener('change', e=> syncK(e.target.value));
 document.getElementById('ctl-K2').addEventListener('input', e=> syncK(e.target.value));
+document.getElementById('ctl-K2-dec').addEventListener('click', ()=> syncK((state.K|0) - 1));
+document.getElementById('ctl-K2-inc').addEventListener('click', ()=> syncK((state.K|0) + 1));
 
 document.getElementById('ctl-complete').addEventListener('change', e=>{
   // チェック＝「重複あり」モード → state.complete は false（=重複なしモードを解除）
@@ -2311,7 +2340,7 @@ document.getElementById('btn-fetch-gsheet').addEventListener('click', async ()=>
       'エラー詳細: ' + err.message + '\n\n'+
       '解決策の候補：\n'+
       '① スプレッドシートを「リンクを知っている全員（閲覧）」に共有\n'+
-      '② 「その他のデータから取込」でA列をコピー＆貼り付け');
+      '② 「コピペから」でA列をコピー＆貼り付け');
   }
 });
 
@@ -3184,7 +3213,7 @@ async function tryLoadFromShareHash(){
     ensureStateIntegrity(state);
     winnerHighlights.clear();
     if(payload.title){
-      document.title = payload.title + ' — オリジナルルーレット';
+      document.title = payload.title + ' — くじ引きアプリ';
     }
     return true;
   }catch(e){
