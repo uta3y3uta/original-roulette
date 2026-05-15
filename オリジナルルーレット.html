@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-rev" content="2026-05-06-o">
+<meta name="build-rev" content="2026-05-06-p">
 <title>くじ引きアプリ</title>
 <!-- 毛筆風フォント（紅白福引きBOXの「福引」文字用） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -249,7 +249,28 @@
   }
   .btn-finish:hover{transform:translateY(-2px)}
 
-  .actions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+  /* 分割数 + データを取込（添付写真と同じピンクのカード風） */
+  .section-source{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:14px 18px;margin-bottom:10px;
+    background:var(--panel);border:2px solid var(--border);
+    border-radius:20px;font-size:14px;
+    box-shadow:var(--shadow);
+  }
+  .section-source > label{
+    font-weight:700;color:var(--text);font-size:14px;
+  }
+  .section-source input[type=number]{
+    width:88px;padding:8px 10px;border:1px solid var(--border);
+    border-radius:12px;background:#fff;
+    color:var(--accent);font-weight:800;text-align:center;
+    font-size:20px;font-family:inherit;
+  }
+  .section-source input[type=number]:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(236,72,153,0.18);
+  }
+  .section-source-btn{padding:9px 22px;font-size:14px;font-weight:700}
+
   .section-bulk{
     display:flex;gap:12px;align-items:center;flex-wrap:wrap;
     padding:8px 12px;margin-bottom:6px;
@@ -259,7 +280,11 @@
   .section-bulk .bulk-label{font-weight:700;color:var(--common-fg);letter-spacing:.04em}
   .section-bulk .bulk-item{display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text)}
   .section-bulk .bulk-item input{cursor:pointer}
-  .section-bulk .bulk-btn{padding:4px 10px;font-size:12px}
+  .section-bulk .bulk-btn{
+    padding:5px 14px;font-size:12px;font-weight:700;
+    background:#fff;color:var(--accent);border-color:var(--accent);
+  }
+  .section-bulk .bulk-btn:hover{background:var(--panel-soft)}
 
   .section-list{max-height:50vh;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:6px;background:var(--panel-soft)}
   .section-row{display:grid;grid-template-columns:32px 1fr 40px 40px 52px;gap:5px;align-items:center;padding:3px 0;font-size:13px}
@@ -691,12 +716,15 @@
 <div class="layout">
   <!-- ===== 左：設定パネル ===== -->
   <div class="panel editor-panel">
-    <div class="controls">
-      <label>分割数</label>
-      <div class="row">
-        <input type="number" id="ctl-N" min="2" max="50" value="8">
-      </div>
+    <!-- 分割数 + データを取込（ピンクのカード風） -->
+    <div class="section-source">
+      <label for="ctl-N">分割数</label>
+      <input type="number" id="ctl-N" min="2" max="50" value="8">
+      <button class="btn btn-primary section-source-btn" id="btn-import-data">データを取込</button>
+      <input type="file" id="file-input" class="file-input" accept=".xlsx,.xls,.xlsm,.csv">
+    </div>
 
+    <div class="controls">
       <label>文字サイズ倍率</label>
       <div class="row">
         <input type="range" id="ctl-fontscale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:180px">
@@ -720,16 +748,6 @@
       </div>
     </div>
 
-    <div class="actions">
-      <button class="btn btn-primary" id="btn-import-data">📥 データを取込</button>
-      <input type="file" id="file-input" class="file-input" accept=".xlsx,.xls,.xlsm,.csv">
-      <button class="btn" id="btn-clear">🗑 クリア</button>
-      <button class="btn" id="btn-export-json">💾 JSON保存</button>
-      <button class="btn" id="btn-import-json">📂 JSON読込</button>
-      <input type="file" id="json-input" class="file-input" accept=".json">
-      <button class="btn" id="btn-history">🕘 履歴</button>
-    </div>
-
     <div class="section-bulk">
       <span class="bulk-label">一括設定</span>
       <label class="bulk-item">
@@ -738,6 +756,10 @@
       </label>
       <button type="button" class="btn bulk-btn" id="bulk-clear-labels">全消去</button>
       <button type="button" class="btn bulk-btn" id="bulk-reset-colors">全同色</button>
+      <button type="button" class="btn bulk-btn" id="btn-export-json">設定を保存</button>
+      <button type="button" class="btn bulk-btn" id="btn-import-json">設定を読込</button>
+      <input type="file" id="json-input" class="file-input" accept=".json">
+      <button type="button" class="btn bulk-btn" id="btn-history">履歴</button>
     </div>
     <div class="section-list" id="section-list"></div>
   </div>
@@ -2197,19 +2219,6 @@ document.getElementById('bulk-reset-colors').addEventListener('click', ()=>{
     state.sections[i].fillColor = null;
     state.sections[i].textColor = null;
   }
-  renderAll();
-});
-
-document.getElementById('btn-clear').addEventListener('click', ()=>{
-  if(!confirm('すべての項目をクリアしますか？\n（分割数Nは保持します）')) return;
-  for(let i=0;i<state.N;i++){
-    state.sections[i] = {label:'', fillColor:null, textColor:null, blank:true};
-  }
-  state.completedSet = [];
-  state.fukubikiPhase = 0;
-  state.cardOrder = makeShuffledOrder(state.N);
-  state.cardFlipped = [];
-  winnerHighlights.clear();
   renderAll();
 });
 
